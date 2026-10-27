@@ -1,0 +1,34 @@
+# Unreal generated folders
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Plugins/**/Binaries/
+Plugins/**/Intermediate/
+
+# Visual Studio / IDEs
+.vs/
+.vscode/
+.idea/
+*.sln
+*.slnx
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+*.user
+
+# Compiled files
+*.pdb
+*.obj
+*.exe
+*.dll
+*.lib
+*.exp
+*.ilk
+
+# Packaged builds (package outside the repo; they go to Box, not GitHub)
+Packaged/
+Build/Windows/
+Build/Linux/
