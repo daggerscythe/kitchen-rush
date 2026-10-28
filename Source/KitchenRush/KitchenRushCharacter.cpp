@@ -5,9 +5,13 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/SceneComponent.h"
 #include "EnhancedInputComponent.h"
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Interaction/KRInteractionComponent.h"
+#include "Time/KRTimeSubsystem.h"
+#include "Engine/World.h"
 #include "KitchenRush.h"
 
 AKitchenRushCharacter::AKitchenRushCharacter()
@@ -33,6 +37,15 @@ AKitchenRushCharacter::AKitchenRushCharacter()
 	FirstPersonCameraComponent->FirstPersonFieldOfView = 70.0f;
 	FirstPersonCameraComponent->FirstPersonScale = 0.6f;
 
+	// Hold point: a child of the camera, it moves and turns with view
+	// X = forward, Y = right, Z = up (in cm), relative to the camera
+	HoldPoint = CreateDefaultSubobject<USceneComponent>(TEXT("Hold Point"));
+	HoldPoint->SetupAttachment(FirstPersonCameraComponent);
+	HoldPoint->SetRelativeLocation(FVector(45.f, 18.f, -22.f));
+
+	// Interaction component
+	Interaction = CreateDefaultSubobject<UKRInteractionComponent>(TEXT("Interaction"));
+
 	// configure the character comps
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::WorldSpaceRepresentation;
@@ -42,6 +55,44 @@ AKitchenRushCharacter::AKitchenRushCharacter()
 	// Configure character movement
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
+	GetCharacterMovement()->MaxWalkSpeed = 400.0f;
+}
+
+void AKitchenRushCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	SpawnLocation = GetActorLocation();
+	SpawnRotation = GetActorRotation();
+
+	Interaction->Setup(FirstPersonCameraComponent, HoldPoint);
+
+	// Frozen look: set up the cameras post-process settings
+	FPostProcessSettings& PP = FirstPersonCameraComponent->PostProcessSettings;
+	PP.bOverride_ColorSaturation = true;
+	PP.ColorSaturation = FVector4(FrozenSaturation, FrozenSaturation, FrozenSaturation, 1.f);
+	PP.bOverride_ColorGain = true;
+	PP.ColorGain = FVector4(FrozenTint.R, FrozenTint.G, FrozenTint.B, 1.f);
+	PP.bOverride_VignetteIntensity = true;
+	PP.VignetteIntensity = FrozenVignette;
+	FirstPersonCameraComponent->PostProcessBlendWeight = 0.f;
+}
+
+void AKitchenRushCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (const UKRTimeSubsystem* Time = GetWorld()->GetSubsystem<UKRTimeSubsystem>())
+	{
+		FirstPersonCameraComponent->PostProcessBlendWeight = Time->GetFreezeAmount();
+	}
+}
+
+void AKitchenRushCharacter::FellOutOfWorld(const UDamageType& DamageType)
+{
+	// Put the player back at the start
+	GetCharacterMovement()->StopMovementImmediately();
+	SetActorLocationAndRotation(SpawnLocation, SpawnRotation, false, nullptr, ETeleportType::TeleportPhysics);
 }
 
 void AKitchenRushCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -50,8 +101,8 @@ void AKitchenRushCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKitchenRushCharacter::DoJumpStart);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &AKitchenRushCharacter::DoJumpEnd);
+		// EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &AKitchenRushCharacter::DoJumpStart);
+		// EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &AKitchenRushCharacter::DoJumpEnd);
 
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AKitchenRushCharacter::MoveInput);
@@ -59,6 +110,9 @@ void AKitchenRushCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		// Looking/Aiming
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AKitchenRushCharacter::LookInput);
 		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AKitchenRushCharacter::LookInput);
+
+		// Interacting
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKitchenRushCharacter::DoInteract);
 	}
 	else
 	{
@@ -117,4 +171,9 @@ void AKitchenRushCharacter::DoJumpEnd()
 {
 	// pass StopJumping to the character
 	StopJumping();
+}
+
+void AKitchenRushCharacter::DoInteract()
+{
+	Interaction->Interact();
 }

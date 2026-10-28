@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class UKRHUDWidget;
 
 /**
  *  Simple first person Player Controller
@@ -45,6 +46,14 @@ protected:
 	/** If true, the player will use UMG touch controls even if not playing on mobile platforms */
 	UPROPERTY(EditAnywhere, Config, Category = "Input|Touch Controls")
 	bool bForceTouchControls = false;
+
+	/** Which HUD to show */
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<UKRHUDWidget> HUDWidgetClass;
+
+	/** The HUD that's on screen */
+	UPROPERTY()
+	TObjectPtr<UKRHUDWidget> HUDWidget;
 
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;

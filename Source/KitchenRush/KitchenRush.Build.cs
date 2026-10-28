@@ -18,7 +18,9 @@ public class KitchenRush : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+            "SlateCore",          // needed by UMG widgets
+			"DeveloperSettings"   // needed for UKRTimeSettings
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

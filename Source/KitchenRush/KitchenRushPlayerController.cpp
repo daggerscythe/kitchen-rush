@@ -7,6 +7,7 @@
 #include "InputMappingContext.h"
 #include "KitchenRushCameraManager.h"
 #include "Blueprint/UserWidget.h"
+#include "UI/KRHUDWidget.h"
 #include "KitchenRush.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -38,6 +39,16 @@ void AKitchenRushPlayerController::BeginPlay()
 
 		}
 
+	}
+
+	// Spawn the HUD
+	if (IsLocalPlayerController() && HUDWidgetClass)
+	{
+		HUDWidget = CreateWidget<UKRHUDWidget>(this, HUDWidgetClass);
+		if (HUDWidget)
+		{
+			HUDWidget->AddToPlayerScreen(0);
+		}
 	}
 }
 
