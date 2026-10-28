@@ -10,7 +10,6 @@
 
 UKRInteractionComponent::UKRInteractionComponent()
 {
-	// Components only tick if you ask them to
 	PrimaryComponentTick.bCanEverTick = true;
 }
 
@@ -23,6 +22,13 @@ void UKRInteractionComponent::Setup(UCameraComponent* InCamera, USceneComponent*
 AKRItem* UKRInteractionComponent::GetHeldItem() const
 {
 	return HeldItem;
+}
+
+AKRItem* UKRInteractionComponent::ReleaseHeldItem()
+{
+	AKRItem* Item = HeldItem;
+	HeldItem = nullptr;
+	return Item;
 }
 
 void UKRInteractionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -42,11 +48,9 @@ void UKRInteractionComponent::UpdateFocus()
 		return;
 	}
 
-	// A line from the camera straight ahead, Reach cm long
 	const FVector Start = Camera->GetComponentLocation();
 	const FVector End = Start + Camera->GetForwardVector() * Reach;
 
-	// Ignore ourselves and the thing in our hands
 	FCollisionQueryParams Params(SCENE_QUERY_STAT(KRInteractTrace), false, GetOwner());
 	if (HeldItem)
 	{
@@ -56,10 +60,10 @@ void UKRInteractionComponent::UpdateFocus()
 	FHitResult Hit;
 	if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
 	{
-		return; // looking at nothing within reach
+		return;
 	}
 
-	// Case 1: we're looking at something interactable that has something to say
+	// Case 1: something interactable with something to say.
 	if (IKRInteractable* Target = Cast<IKRInteractable>(Hit.GetActor()))
 	{
 		const FText TargetPrompt = Target->GetInteractPrompt(HeldItem.Get());
@@ -71,12 +75,12 @@ void UKRInteractionComponent::UpdateFocus()
 		}
 	}
 
-	// Case 2: we're holding something and looking at a flat surface: offer to place it
+	// Case 2: holding something and looking at a flat-enough surface.
 	if (HeldItem && Hit.ImpactNormal.Z >= MinPlaceSurfaceUp)
 	{
 		bCanPlace = true;
 		PlaceLocation = Hit.ImpactPoint;
-		Prompt = FText::Format(NSLOCTEXT("KitchenRush", "PlacePrompt", "Place {0}"), HeldItem->DisplayName);
+		Prompt = FText::Format(NSLOCTEXT("KitchenRush", "PlacePrompt", "Place {0}"), HeldItem->GetItemName());
 	}
 }
 
@@ -99,12 +103,11 @@ void UKRInteractionComponent::Interact()
 
 	if (bDidSomething)
 	{
-		// Every action costs a little time
 		if (UKRTimeSubsystem* Time = GetWorld()->GetSubsystem<UKRTimeSubsystem>())
 		{
 			Time->TriggerActionBurst();
 		}
-		UpdateFocus(); // refresh the prompt right away
+		UpdateFocus();
 	}
 }
 
@@ -124,7 +127,6 @@ void UKRInteractionComponent::PlaceHeldItem()
 	AKRItem* Item = HeldItem;
 	HeldItem = nullptr;
 
-	// Lift 1 cm so physics doesn't start the item inside the counter; Face the same way as the player
 	const float Yaw = GetOwner()->GetActorRotation().Yaw;
 	Item->OnPlaced(PlaceLocation + FVector(0.f, 0.f, 1.f), FRotator(0.f, Yaw, 0.f));
 }

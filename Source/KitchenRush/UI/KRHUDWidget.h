@@ -1,5 +1,5 @@
 // KRHUDWidget.h
-// The C++ half of the HUD
+// The C++ half of the HUD.
 
 #pragma once
 
@@ -9,6 +9,9 @@
 
 class UTextBlock;
 class UImage;
+class UVerticalBox;
+class UTexture2D;
+class UKRTicketWidget;
 
 UCLASS(Abstract)
 class KITCHENRUSH_API UKRHUDWidget : public UUserWidget
@@ -16,25 +19,67 @@ class KITCHENRUSH_API UKRHUDWidget : public UUserWidget
 	GENERATED_BODY()
 
 protected:
-	/** Runs every frame while the widget is on screen. InDeltaTime is REAL time */
+	/** Runs every frame while the widget is on screen. InDeltaTime is REAL time. */
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 
-	/** Text under the crosshair */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UTextBlock> PromptText;
 
-	/** The pocket watch's hand */
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UImage> WatchHand;
 
-	/** Optional "x1.00" readout */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> SpeedText;
 
-	/** How fast the watch hand turns, in degrees per second of WORLD time */
 	UPROPERTY(EditAnywhere, Category = "Watch")
 	float HandDegreesPerWorldSecond = 60.f;
 
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> TipsText;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> ClockText;
+
+	/** "Holding: Plate (Chopped Tomato)" */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> HeldText;
+
+	/** Short messages: tips earned, strikes, soup boiled over. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> MessageText;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Strike0;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Strike1;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UImage> Strike2;
+
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UVerticalBox> TicketList;
+
+	UPROPERTY(EditAnywhere, Category = "Orders")
+	TSubclassOf<UKRTicketWidget> TicketWidgetClass;
+
+	UPROPERTY(EditAnywhere, Category = "Orders")
+	TObjectPtr<UTexture2D> StrikeEmptyTexture;
+
+	UPROPERTY(EditAnywhere, Category = "Orders")
+	TObjectPtr<UTexture2D> StrikeBrokenTexture;
+
 private:
+	void UpdateOrders();
+	void UpdateClock();
+
 	float HandAngle = 0.f;
+
+	/** Tickets shown in the same order as their order IDs. */
+	UPROPERTY()
+	TArray<TObjectPtr<UKRTicketWidget>> TicketWidgets;
+
+	TArray<int32> ShownOrderIds;
+	int32 ShownStrikes = -1;
 };

@@ -56,6 +56,11 @@ AKitchenRushCharacter::AKitchenRushCharacter()
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->AirControl = 0.5f;
 	GetCharacterMovement()->MaxWalkSpeed = 400.0f;
+
+	// Crouching shrinks the capsule to CrouchedHalfHeight and lowers the mesh
+	GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
+	GetCharacterMovement()->SetCrouchedHalfHeight(60.0f);   // standing half height is 96
+	GetCharacterMovement()->MaxWalkSpeedCrouched = 200.0f;  // 2 m/s
 }
 
 void AKitchenRushCharacter::BeginPlay()
@@ -113,6 +118,10 @@ void AKitchenRushCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 
 		// Interacting
 		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Started, this, &AKitchenRushCharacter::DoInteract);
+
+		// Crouching: hold to crouch, release to stand
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AKitchenRushCharacter::DoCrouchStart);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AKitchenRushCharacter::DoCrouchEnd);
 	}
 	else
 	{
@@ -176,4 +185,14 @@ void AKitchenRushCharacter::DoJumpEnd()
 void AKitchenRushCharacter::DoInteract()
 {
 	Interaction->Interact();
+}
+
+void AKitchenRushCharacter::DoCrouchStart()
+{
+	Crouch();   // built into ACharacter; does nothing if crouching isn't allowed
+}
+
+void AKitchenRushCharacter::DoCrouchEnd()
+{
+	UnCrouch(); // stays crouched automatically if something is above your head
 }

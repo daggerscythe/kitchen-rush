@@ -64,6 +64,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* InteractAction;
 
+	/** Crouch Input Action (hold Left Ctrl) */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* CrouchAction;
+
 	/** Frozen look: colour saturation when fully frozen (1 = normal colour, 0 = grey) */
 	UPROPERTY(EditAnywhere, Category = "Time|Frozen Look", meta = (ClampMin = "0", ClampMax = "1"))
 	float FrozenSaturation = 0.35f;
@@ -115,6 +119,14 @@ protected:
 	/** Handles the interact input (E) */
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoInteract();
+
+	/** Start crouching (Ctrl pressed) */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoCrouchStart();
+
+	/** Stop crouching (Ctrl released) */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoCrouchEnd();
 
 protected:
 

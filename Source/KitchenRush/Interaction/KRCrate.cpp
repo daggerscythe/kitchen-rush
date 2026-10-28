@@ -18,15 +18,14 @@ FText AKRCrate::GetInteractPrompt(const AKRItem* HeldItem) const
 {
 	if (!ItemClass)
 	{
-		return FText::GetEmpty(); // forgot to set Item Class in the Details panel
+		return FText::GetEmpty();
 	}
 	if (HeldItem)
 	{
 		return NSLOCTEXT("KitchenRush", "HandsFull", "Hands full");
 	}
-
 	const AKRItem* Defaults = ItemClass.GetDefaultObject();
-	return FText::Format(NSLOCTEXT("KitchenRush", "TakePrompt", "Take {0}"), Defaults->DisplayName);
+	return FText::Format(NSLOCTEXT("KitchenRush", "TakePrompt", "Take {0}"), Defaults->GetItemName());
 }
 
 bool AKRCrate::Interact(UKRInteractionComponent* Interactor)
@@ -36,7 +35,6 @@ bool AKRCrate::Interact(UKRInteractionComponent* Interactor)
 		return false;
 	}
 
-	// Spawn item above crate, put it into player's hands
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	const FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, 60.f);
