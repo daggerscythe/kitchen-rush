@@ -55,12 +55,13 @@ protected:
 
 private:
 	/** The time scale we are blending toward this frame */
-	float ComputeTargetScale(bool bMoving) const;
+	float ComputeMoveScale() const;   // walk speed, including Momentum
 
 	EKRStillMode StillMode = EKRStillMode::Freeze;
 	EKRMoveMode MoveMode = EKRMoveMode::Clamped;
 
 	float CurrentScale = 1.f;      // what the world runs at right now
+	float Flow = 0.f;              // 0 = still, 1 = walking; ramps at a fixed speed
 	float MovingSeconds = 0.f;     // real seconds of nonstop walking (for Momentum mode)
 	float BurstSecondsLeft = 0.f;  // real seconds left in the current action burst
 	float WorldSeconds = 0.f;      // world time that has passed

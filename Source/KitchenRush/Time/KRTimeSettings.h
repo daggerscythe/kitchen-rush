@@ -66,9 +66,17 @@ public:
 
 	// ---- Feel ----
 
-	/** How long (real seconds) it takes to blend from one time scale to another */
-	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0"))
-	float EaseSeconds = 0.15f;
+	/** Real seconds to ramp from standing still to full walking speed. Slow = Superhot feel. */
+	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0.01"))
+	float SpeedUpSeconds = 0.8f;
+
+	/** Real seconds to ramp from walking back down to frozen/slow. */
+	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0.01"))
+	float SlowDownSeconds = 0.35f;
+
+	/** Actions (chop, pick up...) ramp time up much faster than walking does. */
+	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0.01"))
+	float ActionRampSeconds = 0.08f;
 
 	/** Chopping, picking up, placing, etc. run time at walk speed for this many real seconds */
 	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0"))

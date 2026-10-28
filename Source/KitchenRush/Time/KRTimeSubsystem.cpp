@@ -55,35 +55,16 @@ float UKRTimeSubsystem::GetFreezeAmount() const
 	return FMath::Clamp((S->WalkScale - CurrentScale) / Range, 0.f, 1.f);
 }
 
-float UKRTimeSubsystem::ComputeTargetScale(bool bMoving) const
+// The speed the world runs at while walking (Clamped or Momentum).
+float UKRTimeSubsystem::ComputeMoveScale() const
 {
 	const UKRTimeSettings* S = GetDefault<UKRTimeSettings>();
-	float Target = 1.f;
-
-	if (bMoving)
+	if (MoveMode == EKRMoveMode::Momentum)
 	{
-		if (MoveMode == EKRMoveMode::Momentum)
-		{
-			// 0 -> 1 over MomentumRampSeconds of nonstop walking
-			const float Ramp = FMath::Clamp(MovingSeconds / S->MomentumRampSeconds, 0.f, 1.f);
-			Target = FMath::Lerp(S->WalkScale, S->MomentumMaxScale, Ramp);
-		}
-		else
-		{
-			Target = S->WalkScale;
-		}
+		const float Ramp = FMath::Clamp(MovingSeconds / S->MomentumRampSeconds, 0.f, 1.f);
+		return FMath::Lerp(S->WalkScale, S->MomentumMaxScale, Ramp);
 	}
-	else
-	{
-		Target = (StillMode == EKRStillMode::Freeze) ? S->FreezeScale : S->SlowScale;
-	}
-
-	// An action makes time run at least at walk speed for a moment
-	if (BurstSecondsLeft > 0.f)
-	{
-		Target = FMath::Max(Target, S->WalkScale);
-	}
-	return Target;
+	return S->WalkScale;
 }
 
 void UKRTimeSubsystem::Tick(float DeltaTime)
@@ -108,14 +89,21 @@ void UKRTimeSubsystem::Tick(float DeltaTime)
 	MovingSeconds = bMoving ? MovingSeconds + RealDt : 0.f;
 	BurstSecondsLeft = FMath::Max(0.f, BurstSecondsLeft - RealDt);
 
-	// 2) Blend smoothly toward the target speed. This curve covers ~95% of the gap in EaseSeconds
-	const float Target = ComputeTargetScale(bMoving);
-	const float Alpha = (S->EaseSeconds > 0.f) ? 1.f - FMath::Exp(-3.f * RealDt / S->EaseSeconds) : 1.f;
-	CurrentScale = FMath::Lerp(CurrentScale, Target, Alpha);
-	if (FMath::Abs(CurrentScale - Target) < 0.001f)
+	// 2) Ramp "Flow" between 0 (still) and 1 (walking) at a FIXED speed
+	if (bMoving || BurstSecondsLeft > 0.f)
 	{
-		CurrentScale = Target; // snap the last tiny bit so Freeze really reaches 0.0001
+		const float RampSeconds = bMoving ? S->SpeedUpSeconds : S->ActionRampSeconds;
+		Flow = FMath::Min(1.f, Flow + RealDt / RampSeconds);
 	}
+	else
+	{
+		Flow = FMath::Max(0.f, Flow - RealDt / S->SlowDownSeconds);
+	}
+
+	// SmoothStep makes the ramp start gently and end gently (an S-curve), instead of a straight line.
+	const float Eased = FMath::SmoothStep(0.f, 1.f, Flow);
+	const float StillScale = (StillMode == EKRStillMode::Freeze) ? S->FreezeScale : S->SlowScale;
+	CurrentScale = FMath::Lerp(StillScale, ComputeMoveScale(), Eased);
 
 	// 3) Slow down the whole world
 	UGameplayStatics::SetGlobalTimeDilation(World, CurrentScale);

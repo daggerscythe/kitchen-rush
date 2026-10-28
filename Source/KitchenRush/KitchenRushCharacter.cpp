@@ -70,6 +70,10 @@ void AKitchenRushCharacter::BeginPlay()
 	SpawnLocation = GetActorLocation();
 	SpawnRotation = GetActorRotation();
 
+	// Remember the standing setup for the crouch camera.
+	FirstPersonMeshBaseLocation = FirstPersonMesh->GetRelativeLocation();
+	StandingHalfHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+
 	Interaction->Setup(FirstPersonCameraComponent, HoldPoint);
 
 	// Frozen look: set up the cameras post-process settings
@@ -91,6 +95,12 @@ void AKitchenRushCharacter::Tick(float DeltaSeconds)
 	{
 		FirstPersonCameraComponent->PostProcessBlendWeight = Time->GetFreezeAmount();
 	}
+
+	// Crouch camera
+	const float CrouchDrop = StandingHalfHeight - GetCharacterMovement()->GetCrouchedHalfHeight();
+	const float TargetOffset = bIsCrouched ? -CrouchDrop : 0.f;
+	CrouchCameraOffset = FMath::FInterpTo(CrouchCameraOffset, TargetOffset, DeltaSeconds, CrouchCameraSpeed);
+	FirstPersonMesh->SetRelativeLocation(FirstPersonMeshBaseLocation + FVector(0.f, 0.f, CrouchCameraOffset));
 }
 
 void AKitchenRushCharacter::FellOutOfWorld(const UDamageType& DamageType)

@@ -77,6 +77,10 @@ protected:
 	FLinearColor FrozenTint = FLinearColor(0.9f, 0.97f, 1.15f, 1.f);
 
 	/** Frozen look: dark edges when fully frozen */
+	/** [M2-fix] How fast the view moves down/up when you crouch/stand (higher = snappier). */
+	UPROPERTY(EditAnywhere, Category = "Crouch", meta = (ClampMin = "1"))
+	float CrouchCameraSpeed = 12.f;
+
 	UPROPERTY(EditAnywhere, Category = "Time|Frozen Look", meta = (ClampMin = "0", ClampMax = "1"))
 	float FrozenVignette = 0.6f;
 	
@@ -149,5 +153,10 @@ private:
 	/** Where the player started, for respawning after falling out of the world */
 	FVector SpawnLocation = FVector::ZeroVector;
 	FRotator SpawnRotation = FRotator::ZeroRotator;
+
+	/** Crouch camera: the arms+camera mesh's normal position, and how far it's lowered now */
+	FVector FirstPersonMeshBaseLocation = FVector::ZeroVector;
+	float StandingHalfHeight = 96.f;
+	float CrouchCameraOffset = 0.f;
 };
 

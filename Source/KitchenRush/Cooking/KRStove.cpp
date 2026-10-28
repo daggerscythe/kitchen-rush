@@ -4,11 +4,15 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
+#include "Engine/CollisionProfile.h" 
 
 static void SetupBurnerMarker(USphereComponent* Burner)
 {
 	Burner->InitSphereRadius(12.f);
-	Burner->SetCollisionEnabled(ECollisionEnabled::NoCollision); // just a marker
+	Burner->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+	Burner->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Burner->SetGenerateOverlapEvents(false);
+	Burner->CanCharacterStepUpOn = ECB_No;
 	Burner->ShapeColor = FColor::Orange;
 	Burner->SetHiddenInGame(true);
 }
