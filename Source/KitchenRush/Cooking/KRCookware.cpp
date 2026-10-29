@@ -5,12 +5,15 @@
 #include "Cooking/KRTuningData.h"
 #include "UI/KRMeterWidget.h"
 #include "Components/WidgetComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/World.h"
+#include "KitchenRushGameMode.h"
 
 AKRCookware::AKRCookware()
 {
 	// Cookware needs to run every frame (AKRItem turned ticking off).
 	PrimaryActorTick.bCanEverTick = true;
-	bCanBePickedUp = false;
+	// The pan and pot can now be carried and thrown.
 
 	// Draws a UMG widget in the 3D world
 	Meter = CreateDefaultSubobject<UWidgetComponent>(TEXT("Meter"));
@@ -29,6 +32,33 @@ bool AKRCookware::IsOnBurner() const
 	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
 	return AKRStove::IsNearBurner(GetWorld(), GetActorLocation(), T->BurnerRadius, T->BurnerHeight);
+}
+
+void AKRCookware::OnHitByThrownItem(AKRItem* Item)
+{
+	if (!Item || !Mesh->IsSimulatingPhysics())
+	{
+		return;
+	}
+	// Push away from where the item hit us (flat), plus a little hop so it clears the burner.
+	// (We don't use the item's velocity: by the time we hear about the hit, it has already bounced.)
+	FVector Direction = (GetActorLocation() - Item->GetActorLocation()).GetSafeNormal2D();
+	if (Direction.IsNearlyZero())
+	{
+		Direction = GetActorForwardVector();
+	}
+	const bool bWasOnBurner = IsOnBurner();
+	const float Speed = UKRTuningData::Get(this)->KnockSpeed;
+	// bVelChange = true: "add this much speed", whatever the mesh's mass is.
+	Mesh->AddImpulse(Direction * Speed + FVector(0.f, 0.f, Speed * 0.3f), NAME_None, true);
+
+	if (bWasOnBurner)
+	{
+		if (AKitchenRushGameMode* GameMode = GetWorld()->GetAuthGameMode<AKitchenRushGameMode>())
+		{
+			GameMode->ShowMessage(FText::Format(NSLOCTEXT("KitchenRush", "KnockedOff", "Knocked the {0} off the burner!"), DisplayName));
+		}
+	}
 }
 
 void AKRCookware::Tick(float DeltaSeconds)

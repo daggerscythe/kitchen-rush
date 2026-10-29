@@ -10,6 +10,11 @@
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interaction/KRInteractionComponent.h"
+#include "Player/KRHealthComponent.h"
+#include "Player/KRThrowComponent.h"
+#include "Components/InstancedStaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "UObject/ConstructorHelpers.h"
 #include "Time/KRTimeSubsystem.h"
 #include "Engine/World.h"
 #include "KitchenRush.h"
@@ -46,6 +51,24 @@ AKitchenRushCharacter::AKitchenRushCharacter()
 	// Interaction component
 	Interaction = CreateDefaultSubobject<UKRInteractionComponent>(TEXT("Interaction"));
 
+	// Health and throwing
+	Health = CreateDefaultSubobject<UKRHealthComponent>(TEXT("Health"));
+	Throw = CreateDefaultSubobject<UKRThrowComponent>(TEXT("Throw"));
+
+	ArcDots = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Arc Dots"));
+	ArcDots->SetupAttachment(GetCapsuleComponent());
+	ArcDots->SetUsingAbsoluteLocation(true);
+	ArcDots->SetUsingAbsoluteRotation(true);
+	ArcDots->SetUsingAbsoluteScale(true);
+	ArcDots->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ArcDots->SetCastShadow(false);
+	// ConstructorHelpers loads an asset by path when the class is first set up. The engine's sphere always exists.
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> DotMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	if (DotMesh.Succeeded())
+	{
+		ArcDots->SetStaticMesh(DotMesh.Object);
+	}
+
 	// configure the character comps
 	GetMesh()->SetOwnerNoSee(true);
 	GetMesh()->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::WorldSpaceRepresentation;
@@ -75,6 +98,7 @@ void AKitchenRushCharacter::BeginPlay()
 	StandingHalfHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
 
 	Interaction->Setup(FirstPersonCameraComponent, HoldPoint);
+	Throw->Setup(FirstPersonCameraComponent, Interaction, ArcDots); // [M3]
 
 	// Frozen look: set up the cameras post-process settings
 	FPostProcessSettings& PP = FirstPersonCameraComponent->PostProcessSettings;
@@ -132,6 +156,10 @@ void AKitchenRushCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInp
 		// Crouching: hold to crouch, release to stand
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &AKitchenRushCharacter::DoCrouchStart);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &AKitchenRushCharacter::DoCrouchEnd);
+
+		// Throwing: hold to aim, release to throw
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Started, this, &AKitchenRushCharacter::DoThrowStart);
+		EnhancedInputComponent->BindAction(ThrowAction, ETriggerEvent::Completed, this, &AKitchenRushCharacter::DoThrowEnd);
 	}
 	else
 	{
@@ -205,4 +233,14 @@ void AKitchenRushCharacter::DoCrouchStart()
 void AKitchenRushCharacter::DoCrouchEnd()
 {
 	UnCrouch(); // stays crouched automatically if something is above your head
+}
+
+void AKitchenRushCharacter::DoThrowStart()
+{
+	Throw->StartAim();
+}
+
+void AKitchenRushCharacter::DoThrowEnd()
+{
+	Throw->ReleaseThrow();
 }

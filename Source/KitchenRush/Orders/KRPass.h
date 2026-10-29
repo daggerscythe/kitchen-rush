@@ -22,7 +22,13 @@ public:
 	virtual bool Interact(UKRInteractionComponent* Interactor) override;
 
 protected:
-	/** Only blocks Visibility channel, so it catches look-at trace but nothing physical */
+	virtual void BeginPlay() override;
+
+	/** Something physical entered the box: if it's a thrown plate, serve it. */
+	UFUNCTION()
+	void OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	/** Blocks the Visibility channel (look-at trace) and [M3.5] overlaps physics objects (thrown plates). Nothing bumps into it. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pass")
 	TObjectPtr<UBoxComponent> Box;
 };

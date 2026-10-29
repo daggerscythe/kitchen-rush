@@ -8,6 +8,17 @@
 #include "KitchenRushGameMode.generated.h"
 
 class AKRPlate;
+
+/** [M3.7] Everything ScorePlate works out about a served plate (not a UStruct: C++ only). */
+struct FKRPlateScore
+{
+	float Correctness = 0.f;    // 0..1
+	bool bPerfectOrder = false; // every part right, nothing extra
+	bool bPerfectCook = false;  // every cooked part pulled in its perfect window
+	int32 TrickShots = 0;       // matching parts only
+	int32 GusAssists = 0;       // matching parts only
+	int32 GroundTouches = 0;    // every part on the plate
+};
 class UDataTable;
 class UKRTuningData;
 
@@ -35,11 +46,21 @@ public:
 	int32 GetStrikes() const { return Strikes; }
 	bool IsGameOver() const { return bGameOver; }
 
-	/** Serve a plate/bowl to the best-matching open ticket. Returns false if there are no orders. */
-	bool ServeDish(AKRPlate* Plate);
+	/** Serve a plate/bowl to the best-matching open ticket. Returns false if there are no orders.
+	 *  [M3.7] bThrownIntoPass: it was thrown through the window (one more trick shot). Builds a receipt. */
+	bool ServeDish(AKRPlate* Plate, bool bThrownIntoPass = false);
+
+	/** [M3.7] Recent order receipts, oldest first. The HUD shows new ones line by line. */
+	const TArray<FKRReceipt>& GetReceipts() const { return Receipts; }
 
 	/** Show a short message on the HUD for a few seconds ("+$14  Garden Salad"). */
-	void ShowMessage(const FText& Text);
+	void ShowMessage(const FText& Text, float Seconds = 3.f);
+
+	/** [M3] Add tips outside of serving (dodging a knife) and show "+$1  Dodged!". */
+	void AddBonus(int32 Dollars, const FText& Reason);
+
+	/** [M3] End the night: health hit 0 or 3 strikes. M4 replaces the message with a Game Over screen. */
+	void TriggerGameOver(const FText& Reason);
 
 	/** The current message, or empty text if it has expired. */
 	FText GetMessage() const;
@@ -66,10 +87,18 @@ private:
 	void SpawnOrder();
 	void AddStrike(const FText& Reason);
 
-	/** 0..1 correctness of Plate for Recipe; also reports whether every cooked part was perfect. */
-	float ScorePlate(const FKRRecipeRow& Recipe, const AKRPlate* Plate, bool& bOutPerfect) const;
+	/** How well Plate matches Recipe: correctness 0..1, perfect order / cook, and [M3.7] the trick shots,
+	 *  Gus Assists and ground touches of its parts. */
+	FKRPlateScore ScorePlate(const FKRRecipeRow& Recipe, const AKRPlate* Plate) const; // [M3.7] returns a struct now
+
+	/** [M3.5] Next recipe from the shuffle bag: every dish comes up once before any repeats. */
+	FName DrawRecipe();
 
 	TArray<FKROrder> Orders;
+	TArray<FName> RecipeBag;   // [M3.5] recipes left in the current shuffle
+	TArray<FKRReceipt> Receipts; // [M3.7]
+	int32 NextReceiptId = 1;     // [M3.7]
+	FName LastRecipe;          // [M3.5] so a new bag never starts with the dish we just had
 	int32 NextOrderId = 1;
 	float SecondsUntilNextOrder = 0.f;
 	int32 Tips = 0;

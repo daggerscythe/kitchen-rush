@@ -58,6 +58,24 @@ FText AKRChoppingBoard::GetInteractPrompt(const AKRItem* HeldItem) const
 	return FText::GetEmpty();
 }
 
+bool AKRChoppingBoard::CanReceiveItem(const AKRItem* Item) const
+{
+	const AKRFood* Thrown = Cast<AKRFood>(Item);
+	return !Food && Thrown && Thrown->CanBeChopped();
+}
+
+bool AKRChoppingBoard::ReceiveThrownItem(AKRItem* Item)
+{
+	if (!CanReceiveItem(Item))
+	{
+		return false;
+	}
+	Food = Cast<AKRFood>(Item);
+	Food->OnStored(FoodSlot, FVector::ZeroVector);
+	Chops = 0;
+	return true;
+}
+
 bool AKRChoppingBoard::Interact(UKRInteractionComponent* Interactor)
 {
 	if (!Interactor)

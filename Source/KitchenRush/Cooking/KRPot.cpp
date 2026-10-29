@@ -8,6 +8,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/World.h"
 #include "KitchenRushGameMode.h"
+#include "Hazards/KRHazardZone.h"
 
 AKRPot::AKRPot()
 {
@@ -32,8 +33,45 @@ static bool IsChoppedTomato(const AKRItem* Item)
 	return Food && Food->FoodType == EKRFoodType::Tomato && Food->IsChopped();
 }
 
+// [M3]
+bool AKRPot::CanReceiveItem(const AKRItem* Item) const
+{
+	return IsChoppedTomato(Item) && TomatoCount < UKRTuningData::Get(this)->SoupTomatoesNeeded;
+}
+
+// [M3]
+bool AKRPot::ReceiveThrownItem(AKRItem* Item)
+{
+	if (!CanReceiveItem(Item))
+	{
+		return false;
+	}
+	AddTomato(Item);
+	return true;
+}
+
+// [M3]
+void AKRPot::AddTomato(AKRItem* Tomato)
+{
+	// [M3.7] The soup inherits each tomato's tally (the tomato itself is about to be destroyed).
+	if (const AKRFood* Food = Cast<AKRFood>(Tomato))
+	{
+		const FKRPlatedPart Part = Food->GetPlatedPart();
+		TomatoTally.TrickShots += Part.TrickShots;
+		TomatoTally.GusAssists += Part.GusAssists;
+		TomatoTally.GroundTouches += Part.GroundTouches;
+	}
+	Tomato->Destroy(); // the tomato goes into the soup
+	++TomatoCount;
+	UpdateSurface();
+}
+
 FText AKRPot::GetInteractPrompt(const AKRItem* HeldItem) const
 {
+	if (IsInFlight()) // [M3]
+	{
+		return GetCatchPrompt(HeldItem);
+	}
 	if (IsHeld())
 	{
 		return FText::GetEmpty();
@@ -57,6 +95,10 @@ FText AKRPot::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRPot::Interact(UKRInteractionComponent* Interactor)
 {
+	if (IsInFlight()) // [M3]
+	{
+		return CatchBy(Interactor);
+	}
 	if (!Interactor || IsHeld())
 	{
 		return false;
@@ -66,16 +108,14 @@ bool AKRPot::Interact(UKRInteractionComponent* Interactor)
 
 	if (IsChoppedTomato(Held) && TomatoCount < T->SoupTomatoesNeeded)
 	{
-		Interactor->ReleaseHeldItem()->Destroy(); // the tomato goes into the soup
-		++TomatoCount;
-		UpdateSurface();
+		AddTomato(Interactor->ReleaseHeldItem());
 		return true;
 	}
 	if (AKRPlate* Bowl = Cast<AKRPlate>(Held))
 	{
 		if (Bowl->CanAcceptSoup() && IsSoupReady())
 		{
-			Bowl->AddSoup(SimmerSeconds < T->SoupBoilWarnAt);
+			Bowl->AddSoup(SimmerSeconds < T->SoupBoilWarnAt, TomatoTally); // [M3.7] the tomatoes' tally
 			ResetPot();
 			return true;
 		}
@@ -94,13 +134,27 @@ void AKRPot::Cook(float WorldSeconds)
 	SimmerSeconds += WorldSeconds;
 	if (SimmerSeconds >= T->SoupBoilOverAt)
 	{
-		// M3 adds the scalding spill zone here.
-		if (AKitchenRushGameMode* GameMode = GetWorld()->GetAuthGameMode<AKitchenRushGameMode>())
-		{
-			GameMode->ShowMessage(NSLOCTEXT("KitchenRush", "BoiledOver", "The soup boiled over!"));
-		}
-		ResetPot();
+		BoilOver();
 	}
+}
+
+// [M3]
+void AKRPot::BoilOver()
+{
+	const UKRTuningData* T = UKRTuningData::Get(this);
+
+	UClass* ZoneClass = SpillClass ? SpillClass.Get() : AKRHazardZone::StaticClass();
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AKRHazardZone* Spill = GetWorld()->SpawnActor<AKRHazardZone>(ZoneClass, GetActorLocation(), FRotator::ZeroRotator, Params))
+	{
+		Spill->Start(T->SpillSeconds, T->SpillDamagePerSecond, T->SpillRadius, false);
+	}
+	if (AKitchenRushGameMode* GameMode = GetWorld()->GetAuthGameMode<AKitchenRushGameMode>())
+	{
+		GameMode->ShowMessage(NSLOCTEXT("KitchenRush", "BoiledOver", "The soup boiled over! Scalding spill, keep clear."));
+	}
+	ResetPot();
 }
 
 void AKRPot::UpdateMeter()
@@ -136,6 +190,7 @@ void AKRPot::UpdateMeter()
 void AKRPot::ResetPot()
 {
 	TomatoCount = 0;
+	TomatoTally = FKRPlatedPart(); // [M3.7]
 	SimmerSeconds = 0.f;
 	UpdateSurface();
 }

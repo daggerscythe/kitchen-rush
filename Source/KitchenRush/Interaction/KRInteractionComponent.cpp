@@ -4,6 +4,7 @@
 #include "Interaction/KRInteractable.h"
 #include "Interaction/KRItem.h"
 #include "Time/KRTimeSubsystem.h"
+#include "Cooking/KRTuningData.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Actor.h"
@@ -55,6 +56,29 @@ void UKRInteractionComponent::UpdateFocus()
 	if (HeldItem)
 	{
 		Params.AddIgnoredActor(HeldItem.Get());
+	}
+
+	// [M3] Case 0: catching. Flying things are small and fast, so sweep a fat sphere instead of a thin
+	// line (aim assist), out to the catch range. If it finds something catchable, that wins.
+	{
+		const UKRTuningData* T = UKRTuningData::Get(this);
+		const FVector CatchEnd = Start + Camera->GetForwardVector() * T->CatchRange;
+		FHitResult CatchHit;
+		if (GetWorld()->SweepSingleByChannel(CatchHit, Start, CatchEnd, FQuat::Identity, ECC_Visibility,
+			FCollisionShape::MakeSphere(T->CatchAssistRadius), Params))
+		{
+			IKRInteractable* Flying = Cast<IKRInteractable>(CatchHit.GetActor());
+			if (Flying && Flying->IsCatchable())
+			{
+				const FText CatchPrompt = Flying->GetInteractPrompt(HeldItem.Get());
+				if (!CatchPrompt.IsEmpty())
+				{
+					FocusedActor = CatchHit.GetActor();
+					Prompt = CatchPrompt;
+					return;
+				}
+			}
+		}
 	}
 
 	FHitResult Hit;

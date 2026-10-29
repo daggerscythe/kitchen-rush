@@ -74,14 +74,31 @@ public:
 	float PatiencePerStep = 10.f;
 
 	// ---- Scoring (dollars) ----
+	/** Price of a dish whose Price in DT_Recipes is 0. */
 	UPROPERTY(EditAnywhere, Category = "Scoring")
 	float TipBase = 10.f;
 
+	/** "Perfect cook!": every cooked part pulled in its perfect window. [M3.7] was 5 */
 	UPROPERTY(EditAnywhere, Category = "Scoring")
-	float PerfectBonus = 5.f;
+	float PerfectBonus = 2.f;
 
+	// [M3.7] SpeedBonusMax (up to +$5 scaled by patience) was replaced by the flat Patience Bonus below.
+
+	/** [M3.7] "Patience bonus!": paid when the customer's patience bar is at least this full when served (0.7 = 70%). */
+	UPROPERTY(EditAnywhere, Category = "Scoring", meta = (ClampMin = "0", ClampMax = "1"))
+	float PatienceBonusThreshold = 0.7f;
+
+	/** [M3.7] Dollars for the patience bonus. */
 	UPROPERTY(EditAnywhere, Category = "Scoring")
-	float SpeedBonusMax = 5.f;
+	float PatienceBonus = 3.f;
+
+	/** [M3.7] "Perfect order!": every part right and nothing extra. */
+	UPROPERTY(EditAnywhere, Category = "Scoring")
+	float PerfectOrderBonus = 1.f;
+
+	/** [M3.7] Taken off per served ingredient that touched the floor. */
+	UPROPERTY(EditAnywhere, Category = "Scoring")
+	float GroundPenalty = 3.f;
 
 	/** Correctness lost per wrong or extra item (0.25 = 25%). */
 	UPROPERTY(EditAnywhere, Category = "Scoring")
@@ -100,4 +117,141 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Shift Clock")
 	float WorldSecondsPerGameHour = 60.f;
+
+	// ================= [M3] =================
+
+	// ---- Throwing and catching ----
+	/** Speed of a throw along your view, in cm/s. */
+	UPROPERTY(EditAnywhere, Category = "Throwing")
+	float ThrowSpeed = 900.f;
+
+	/** Extra upward speed added to every throw, so it arcs. */
+	UPROPERTY(EditAnywhere, Category = "Throwing")
+	float ThrowUpSpeed = 150.f;
+
+	/** How far away (cm) you can catch something flying. */
+	UPROPERTY(EditAnywhere, Category = "Throwing")
+	float CatchRange = 300.f;
+
+	/** Catch aim assist: how close (cm) your crosshair line has to pass to a flying item. */
+	UPROPERTY(EditAnywhere, Category = "Throwing")
+	float CatchAssistRadius = 20.f;
+
+	/** How hard a thrown item knocks a pan or pot off the burner (cm/s added). */
+	UPROPERTY(EditAnywhere, Category = "Throwing")
+	float KnockSpeed = 350.f;
+
+	// ---- Health ----
+	UPROPERTY(EditAnywhere, Category = "Health")
+	float MaxHealth = 100.f;
+
+	/** World seconds without damage before health starts coming back. */
+	UPROPERTY(EditAnywhere, Category = "Health")
+	float RegenDelay = 4.f;
+
+	/** Health per world second while regenerating. */
+	UPROPERTY(EditAnywhere, Category = "Health")
+	float RegenPerSecond = 5.f;
+
+	// ---- Knives ----
+	UPROPERTY(EditAnywhere, Category = "Hazards|Knife")
+	float KnifeHitDamage = 40.f; // [M3.6] 20 in M3, 60 in M3.5
+
+	/** Trying to catch a knife hurts. */
+	UPROPERTY(EditAnywhere, Category = "Hazards|Knife")
+	float KnifeCatchDamage = 20.f; // [M3.6] 10 in M3, 30 in M3.5
+
+	UPROPERTY(EditAnywhere, Category = "Hazards|Knife")
+	float KnifeSpeed = 1100.f;
+
+	/** 1 = normal gravity. Low values make knives fly in readable, almost straight lines. */
+	UPROPERTY(EditAnywhere, Category = "Hazards|Knife")
+	float KnifeGravityScale = 0.15f;
+
+	/** A knife passing this close (cm) without hitting you earns the dodge bonus. */
+	UPROPERTY(EditAnywhere, Category = "Hazards|Knife")
+	float DodgeDistance = 100.f;
+
+	// ---- Hot sauce ----
+	UPROPERTY(EditAnywhere, Category = "Hazards|Hot Sauce")
+	float SauceShatterDamage = 20.f; // [M3.6] 10 in M3, 30 in M3.5
+
+	UPROPERTY(EditAnywhere, Category = "Hazards|Hot Sauce")
+	float SauceShatterRadius = 150.f;
+
+	// ---- Grease fire (pan) ----
+	/** World seconds past "burnt" before the steak catches fire. */
+	UPROPERTY(EditAnywhere, Category = "Hazards|Grease Fire")
+	float GreaseFireDelay = 3.f;
+
+	UPROPERTY(EditAnywhere, Category = "Hazards|Grease Fire")
+	float GreaseFireSeconds = 10.f;
+
+	UPROPERTY(EditAnywhere, Category = "Hazards|Grease Fire")
+	float GreaseFireDamagePerSecond = 30.f; // [M3.6] 15 in M3, 45 in M3.5
+
+	UPROPERTY(EditAnywhere, Category = "Hazards|Grease Fire")
+	float GreaseFireRadius = 100.f;
+
+	// ---- Boil-over (pot) ----
+	UPROPERTY(EditAnywhere, Category = "Hazards|Boil Over")
+	float SpillSeconds = 8.f;
+
+	UPROPERTY(EditAnywhere, Category = "Hazards|Boil Over")
+	float SpillDamagePerSecond = 20.f; // [M3.6] 10 in M3, 30 in M3.5
+
+	UPROPERTY(EditAnywhere, Category = "Hazards|Boil Over")
+	float SpillRadius = 120.f;
+
+	// ---- Gus ----
+	/** World seconds between Gus tossing you an ingredient. 0 = never (M4 schedules them instead). */
+	UPROPERTY(EditAnywhere, Category = "Gus")
+	float TossInterval = 40.f;
+
+	/** World seconds between Gus tripping. 0 = never. */
+	UPROPERTY(EditAnywhere, Category = "Gus")
+	float TripInterval = 45.f; // [M3.5] was 90
+
+	/** [M3.5] World seconds before Gus's first trip of the night (then every TripInterval). */
+	UPROPERTY(EditAnywhere, Category = "Gus")
+	float FirstTripDelay = 30.f;
+
+	/** [M3.5] World seconds of warning before a trip: the big HUD warning and arrow show this long before anything flies.
+	 *  (After launch the warning stays up 0.75 s more.) */
+	UPROPERTY(EditAnywhere, Category = "Gus")
+	float TripWarningSeconds = 1.5f; // [M3.6] was 2.5
+
+	/** [M3.5] World seconds between Gus calling out a toss (a normal HUD message) and the throw. */
+	UPROPERTY(EditAnywhere, Category = "Gus")
+	float TossWarningSeconds = 1.5f;
+
+	/** 0..1: how high Gus lobs things (0.5 = a nice arc). */
+	UPROPERTY(EditAnywhere, Category = "Gus")
+	float TossArc = 0.5f;
+
+	// ---- Scoring extras ----
+	/** [M3.7] "Gus Assist!": per ingredient caught from Gus, served, that never touched the ground. (Was CatchBonus.) */
+	UPROPERTY(EditAnywhere, Category = "Scoring")
+	float GusAssistBonus = 2.f;
+
+	UPROPERTY(EditAnywhere, Category = "Scoring")
+	float DodgeBonus = 1.f;
+
+	/** Per trick shot: [M3.7] each ingredient counts once per place it was thrown into (board, plate, pan, pot),
+	 *  plus one when the plate itself is thrown through the pass. */
+	UPROPERTY(EditAnywhere, Category = "Scoring")
+	float TrickShotBonus = 1.f;
+
+	// ---- [M3.5] Broken plates ----
+	/** A plate or bowl hitting the floor faster than this (cm/s) shatters. Dropping one off the counter is about 420. */
+	UPROPERTY(EditAnywhere, Category = "Hazards|Broken Plates")
+	float PlateShatterSpeed = 250.f;
+
+	/** Damage each time you step onto a pile of shards. */
+	UPROPERTY(EditAnywhere, Category = "Hazards|Broken Plates")
+	float ShardStepDamage = 10.f; // [M3.6] was 15
+
+	/** How close (cm, sideways) your feet must be to a pile of shards to step on it. */
+	UPROPERTY(EditAnywhere, Category = "Hazards|Broken Plates")
+	float ShardRadius = 35.f;
 };

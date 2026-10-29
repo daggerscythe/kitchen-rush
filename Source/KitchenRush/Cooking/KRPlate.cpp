@@ -5,10 +5,17 @@
 #include "Cooking/KRTuningData.h"
 #include "Interaction/KRInteractionComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Hazards/KRShards.h"
+#include "Components/CapsuleComponent.h"
+#include "Engine/World.h"
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "KitchenRushGameMode.h"
 
 AKRPlate::AKRPlate()
 {
 	DisplayName = NSLOCTEXT("KitchenRush", "PlateName", "Plate");
+	PrimaryActorTick.bCanEverTick = true; // [M3.5] remembers its speed so it knows how hard it hit the floor
 
 	SoupFill = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Soup Fill"));
 	SoupFill->SetupAttachment(Mesh);
@@ -43,10 +50,11 @@ bool AKRPlate::CanAcceptSoup() const
 	return bIsBowl && !bHasSoup;
 }
 
-void AKRPlate::AddSoup(bool bPerfect)
+void AKRPlate::AddSoup(bool bPerfect, const FKRPlatedPart& Tally)
 {
 	bHasSoup = true;
 	bSoupPerfect = bPerfect;
+	SoupTally = Tally; // [M3.7]
 	SoupFill->SetVisibility(true);
 }
 
@@ -62,7 +70,58 @@ void AKRPlate::ClearContents()
 	Foods.Empty();
 	bHasSoup = false;
 	bSoupPerfect = false;
+	SoupTally = FKRPlatedPart(); // [M3.7]
 	SoupFill->SetVisibility(false);
+}
+
+// [M3.5]
+void AKRPlate::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	// Ticks before physics each frame, so this is the speed going INTO any hit this frame.
+	LastSpeed = GetVelocity().Size();
+}
+
+// [M3.5]
+void AKRPlate::OnPhysicsHit(AActor* OtherActor, const FHitResult& Hit)
+{
+	if (IsHeld() || IsStored() || LastSpeed < UKRTuningData::Get(this)->PlateShatterSpeed)
+	{
+		return;
+	}
+	// "The floor" = a flat surface at the height of the player's feet. Counters are 90 cm up, so they don't count.
+	if (IsFloorHit(Hit)) // [M3.7] moved into AKRItem so food can use it too
+	{
+		Shatter(Hit.ImpactPoint);
+	}
+}
+
+// [M3.5]
+void AKRPlate::Shatter(const FVector& Where)
+{
+	// Food falls on the floor (the 5-second rule applies); soup is lost.
+	for (int32 i = 0; i < Foods.Num(); ++i)
+	{
+		if (AKRFood* Food = Foods[i])
+		{
+			const float Angle = FMath::DegreesToRadians(120.f * i);
+			Food->OnPlaced(Where + FVector(FMath::Cos(Angle) * 20.f, FMath::Sin(Angle) * 20.f, 8.f), FRotator::ZeroRotator);
+		}
+	}
+	Foods.Empty(); // so Destroyed() doesn't destroy the food we just dropped
+
+	UClass* PileClass = ShardsClass ? ShardsClass.Get() : AKRShards::StaticClass();
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AKRShards* Shards = GetWorld()->SpawnActor<AKRShards>(PileClass, Where + FVector(0.f, 0.f, 3.f), FRotator::ZeroRotator, Params))
+	{
+		Shards->DisplayName = FText::Format(NSLOCTEXT("KitchenRush", "BrokenName", "Broken {0}"), DisplayName);
+	}
+	if (AKitchenRushGameMode* GameMode = GetWorld()->GetAuthGameMode<AKitchenRushGameMode>())
+	{
+		GameMode->ShowMessage(FText::Format(NSLOCTEXT("KitchenRush", "Smashed", "CRASH! The {0} smashed. Mind the pieces."), DisplayName));
+	}
+	Destroy();
 }
 
 bool AKRPlate::IsEmpty() const
@@ -86,6 +145,9 @@ TArray<FKRPlatedPart> AKRPlate::GetPlatedParts() const
 		Soup.Part = EKRDishPart::TomatoSoup;
 		Soup.bCooked = true;
 		Soup.bPerfect = bSoupPerfect;
+		Soup.TrickShots = SoupTally.TrickShots;       // [M3.7]
+		Soup.GusAssists = SoupTally.GusAssists;
+		Soup.GroundTouches = SoupTally.GroundTouches;
 		Parts.Add(Soup);
 	}
 	return Parts;
@@ -121,8 +183,24 @@ FText AKRPlate::GetItemName() const
 	return FText::Format(NSLOCTEXT("KitchenRush", "PlateWithItems", "{0} ({1})"), DisplayName, GetContentsText());
 }
 
+// [M3]
+bool AKRPlate::CanReceiveItem(const AKRItem* Item) const
+{
+	return CanAcceptFood(Cast<AKRFood>(Item));
+}
+
+// [M3]
+bool AKRPlate::ReceiveThrownItem(AKRItem* Item)
+{
+	return AddFood(Cast<AKRFood>(Item));
+}
+
 FText AKRPlate::GetInteractPrompt(const AKRItem* HeldItem) const
 {
+	if (IsInFlight()) // [M3]
+	{
+		return GetCatchPrompt(HeldItem);
+	}
 	if (IsHeld() || IsStored())
 	{
 		return FText::GetEmpty();
@@ -141,6 +219,10 @@ FText AKRPlate::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRPlate::Interact(UKRInteractionComponent* Interactor)
 {
+	if (IsInFlight()) // [M3]
+	{
+		return CatchBy(Interactor);
+	}
 	if (!Interactor || IsHeld() || IsStored())
 	{
 		return false;

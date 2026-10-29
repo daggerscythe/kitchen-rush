@@ -70,6 +70,10 @@ void AKRFood::UpdateCookLook()
 FKRPlatedPart AKRFood::GetPlatedPart() const
 {
 	FKRPlatedPart Result;
+	// [M3.7] One ingredient: its trick shots, a Gus Assist if caught and never dropped, a ground touch if dropped.
+	Result.TrickShots = GetTrickShotCount();
+	Result.GusAssists = (WasCaughtFromGus() && !HasTouchedGround()) ? 1 : 0;
+	Result.GroundTouches = HasTouchedGround() ? 1 : 0;
 	switch (FoodType)
 	{
 	case EKRFoodType::Tomato:  Result.Part = bChopped ? EKRDishPart::ChoppedTomato : EKRDishPart::None; break;
@@ -108,6 +112,10 @@ FText AKRFood::GetItemName() const
 
 FText AKRFood::GetInteractPrompt(const AKRItem* HeldItem) const
 {
+	if (IsInFlight()) // [M3]
+	{
+		return GetCatchPrompt(HeldItem);
+	}
 	if (IsHeld() || IsStored())
 	{
 		return FText::GetEmpty();
@@ -126,6 +134,10 @@ FText AKRFood::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRFood::Interact(UKRInteractionComponent* Interactor)
 {
+	if (IsInFlight()) // [M3]
+	{
+		return CatchBy(Interactor);
+	}
 	if (!Interactor || IsHeld() || IsStored())
 	{
 		return false;

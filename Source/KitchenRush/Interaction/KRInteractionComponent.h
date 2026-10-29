@@ -43,6 +43,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Interaction")
 	AKRItem* GetHeldItem() const;
 
+	/** [M3.5] What the player is looking at with something to do (nullptr = nothing). The trash lid uses it. */
+	AActor* GetFocusedActor() const { return FocusedActor.Get(); }
+
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 protected:

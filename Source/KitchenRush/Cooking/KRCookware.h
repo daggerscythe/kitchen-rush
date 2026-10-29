@@ -22,6 +22,9 @@ public:
 	/** Sitting near one of the stove's burner markers? */
 	bool IsOnBurner() const;
 
+	/** Something thrown hit us: get knocked away (off the burner). */
+	virtual void OnHitByThrownItem(AKRItem* Item) override;
+
 protected:
 	/** Called every frame with WORLD seconds while on a burner. Children do the cooking here. */
 	virtual void Cook(float WorldSeconds) {}

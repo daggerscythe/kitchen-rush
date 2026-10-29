@@ -13,6 +13,9 @@ class UCameraComponent;
 class UInputAction;
 class USceneComponent;
 class UKRInteractionComponent;
+class UKRHealthComponent;
+class UKRThrowComponent;
+class UInstancedStaticMeshComponent;
 class UDamageType;
 struct FInputActionValue;
 
@@ -42,6 +45,18 @@ class AKitchenRushCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UKRInteractionComponent* Interaction;
 
+	/** Health, regen, damage flash */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UKRHealthComponent* Health;
+
+	/** Hold LMB to aim, release to throw */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UKRThrowComponent* Throw;
+
+	/** The dots of the throw arc (one mesh instance per dot, placed in world space) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UInstancedStaticMeshComponent* ArcDots;
+
 protected:
 
 	/** Jump Input Action */
@@ -68,6 +83,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* CrouchAction;
 
+	/** Throw Input Action (hold Left Mouse Button to aim, release to throw) */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ThrowAction;
+
 	/** Frozen look: colour saturation when fully frozen (1 = normal colour, 0 = grey) */
 	UPROPERTY(EditAnywhere, Category = "Time|Frozen Look", meta = (ClampMin = "0", ClampMax = "1"))
 	float FrozenSaturation = 0.35f;
@@ -77,7 +96,7 @@ protected:
 	FLinearColor FrozenTint = FLinearColor(0.9f, 0.97f, 1.15f, 1.f);
 
 	/** Frozen look: dark edges when fully frozen */
-	/** [M2-fix] How fast the view moves down/up when you crouch/stand (higher = snappier). */
+	/** How fast the view moves down/up when you crouch/stand (higher = snappier). */
 	UPROPERTY(EditAnywhere, Category = "Crouch", meta = (ClampMin = "1"))
 	float CrouchCameraSpeed = 12.f;
 
@@ -132,6 +151,14 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	virtual void DoCrouchEnd();
 
+	/** LMB pressed: show the throw arc */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoThrowStart();
+
+	/** LMB released: throw */
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	virtual void DoThrowEnd();
+
 protected:
 
 	/** Set up input action bindings */
@@ -148,6 +175,9 @@ public:
 
 	/** Returns the interaction component **/
 	UKRInteractionComponent* GetInteraction() const { return Interaction; }
+
+	/** Returns the health component **/
+	UKRHealthComponent* GetHealth() const { return Health; }
 
 private:
 	/** Where the player started, for respawning after falling out of the world */

@@ -5,6 +5,9 @@
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
 #include "Interaction/KRInteractionComponent.h"
+#include "Hazards/KRHazardZone.h"
+#include "Engine/World.h"
+#include "KitchenRushGameMode.h"
 
 AKRPan::AKRPan()
 {
@@ -15,8 +18,34 @@ AKRPan::AKRPan()
 	FoodSlot->SetRelativeLocation(FVector(0.f, 0.f, 1.5f));
 }
 
+bool AKRPan::CanReceiveItem(const AKRItem* Item) const
+{
+	const AKRFood* Food = Cast<AKRFood>(Item);
+	return !Steak && Food && Food->CanBeCooked();
+}
+
+bool AKRPan::ReceiveThrownItem(AKRItem* Item)
+{
+	if (!CanReceiveItem(Item))
+	{
+		return false;
+	}
+	AddSteak(Cast<AKRFood>(Item));
+	return true;
+}
+
+void AKRPan::AddSteak(AKRFood* Food)
+{
+	Food->OnStored(FoodSlot, FVector::ZeroVector);
+	Steak = Food;
+}
+
 FText AKRPan::GetInteractPrompt(const AKRItem* HeldItem) const
 {
+	if (IsInFlight())
+	{
+		return GetCatchPrompt(HeldItem);
+	}
 	if (IsHeld())
 	{
 		return FText::GetEmpty();
@@ -46,6 +75,10 @@ FText AKRPan::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRPan::Interact(UKRInteractionComponent* Interactor)
 {
+	if (IsInFlight())
+	{
+		return CatchBy(Interactor);
+	}
 	if (!Interactor || IsHeld())
 	{
 		return false;
@@ -58,8 +91,7 @@ bool AKRPan::Interact(UKRInteractionComponent* Interactor)
 		if (HeldFood && HeldFood->CanBeCooked())
 		{
 			Interactor->ReleaseHeldItem();
-			HeldFood->OnStored(FoodSlot, FVector::ZeroVector);
-			Steak = HeldFood;
+			AddSteak(HeldFood);
 			return true;
 		}
 		return Super::Interact(Interactor);
@@ -87,7 +119,33 @@ void AKRPan::Cook(float WorldSeconds)
 	if (Steak)
 	{
 		Steak->AddCookTime(WorldSeconds);
-		// M3: a steak left 3 s past burnt starts a grease fire here.
+		// A steak left GreaseFireDelay seconds past burnt catches fire.
+		const UKRTuningData* T = UKRTuningData::Get(this);
+		if (Steak->GetCookSeconds() >= T->SteakBurntAt + T->GreaseFireDelay)
+		{
+			StartGreaseFire();
+		}
+	}
+}
+
+void AKRPan::StartGreaseFire()
+{
+	const UKRTuningData* T = UKRTuningData::Get(this);
+
+	// The steak is ash now.
+	Steak->Destroy();
+	Steak = nullptr;
+
+	UClass* FireClass = GreaseFireClass ? GreaseFireClass.Get() : AKRHazardZone::StaticClass();
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	if (AKRHazardZone* Fire = GetWorld()->SpawnActor<AKRHazardZone>(FireClass, GetActorLocation(), FRotator::ZeroRotator, Params))
+	{
+		Fire->Start(T->GreaseFireSeconds, T->GreaseFireDamagePerSecond, T->GreaseFireRadius, true);
+	}
+	if (AKitchenRushGameMode* GameMode = GetWorld()->GetAuthGameMode<AKitchenRushGameMode>())
+	{
+		GameMode->ShowMessage(NSLOCTEXT("KitchenRush", "GreaseFire", "GREASE FIRE! Stay back, that burner is out for a while."));
 	}
 }
 

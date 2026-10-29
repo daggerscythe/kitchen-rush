@@ -4,7 +4,8 @@
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
-#include "Engine/CollisionProfile.h" 
+#include "Engine/CollisionProfile.h"
+#include "Hazards/KRHazardZone.h"
 
 static void SetupBurnerMarker(USphereComponent* Burner)
 {
@@ -46,7 +47,7 @@ bool AKRStove::IsNearBurner(UWorld* World, const FVector& Location, float Radius
 	{
 		for (const USphereComponent* Burner : { It->BurnerA.Get(), It->BurnerB.Get() })
 		{
-			if (!Burner)
+			if (!Burner || AKRHazardZone::IsBurnerBlocked(World, Burner->GetComponentLocation())) // fire = burner off
 			{
 				continue;
 			}

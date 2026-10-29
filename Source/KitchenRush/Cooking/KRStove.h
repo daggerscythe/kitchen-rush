@@ -19,7 +19,8 @@ class KITCHENRUSH_API AKRStove : public AActor
 public:
 	AKRStove();
 
-	/** True if Location is within Radius (sideways) and Height (up/down) of any burner in the level. */
+	/** True if Location is within Radius (sideways) and Height (up/down) of any burner in the level.
+	 *  A burner with a grease fire on it doesn't count. */
 	static bool IsNearBurner(UWorld* World, const FVector& Location, float Radius, float Height);
 
 protected:
