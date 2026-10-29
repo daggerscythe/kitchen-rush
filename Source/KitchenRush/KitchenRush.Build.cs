@@ -26,13 +26,7 @@ public class KitchenRush : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
-			"KitchenRush",
-			"KitchenRush/Variant_Horror",
-			"KitchenRush/Variant_Horror/UI",
-			"KitchenRush/Variant_Shooter",
-			"KitchenRush/Variant_Shooter/AI",
-			"KitchenRush/Variant_Shooter/UI",
-			"KitchenRush/Variant_Shooter/Weapons"
+			"KitchenRush"
 		});
 
 		// Uncomment if you are using Slate UI
