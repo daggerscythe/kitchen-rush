@@ -137,7 +137,6 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Words", meta = (MultiLine = true)) FText NoteThrowSteak;
 	UPROPERTY(EditAnywhere, Category = "Words", meta = (MultiLine = true)) FText NoteBreathe;
 	UPROPERTY(EditAnywhere, Category = "Words", meta = (MultiLine = true)) FText NotePotOpens;
-	UPROPERTY(EditAnywhere, Category = "Words", meta = (MultiLine = true)) FText NotePacing;
 	UPROPERTY(EditAnywhere, Category = "Words", meta = (MultiLine = true)) FText NoteChainReaction;
 	UPROPERTY(EditAnywhere, Category = "Words", meta = (MultiLine = true)) FText NoteShelf;
 	UPROPERTY(EditAnywhere, Category = "Words") FText GusDoorsOpen;
@@ -187,7 +186,6 @@ private:
 	bool bChainDone = false;
 	bool bShelfDone = false;
 	bool bSpecialDone = false;
-	bool bShownPacing = false;
 
 	// Auto-freeze: after Gus launches AwaitedEvent, wait FreezeCountdown world seconds, then show FreezeNote.
 	FName AwaitedEvent;

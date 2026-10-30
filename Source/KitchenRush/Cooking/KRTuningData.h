@@ -68,10 +68,10 @@ public:
 	int32 MaxOpenTickets = 2;
 
 	UPROPERTY(EditAnywhere, Category = "Orders")
-	float PatienceBase = 30.f;
+	float PatienceBase = 20.f; // [M4.1] was 30: you can stop time, so tickets can be tighter
 
 	UPROPERTY(EditAnywhere, Category = "Orders")
-	float PatiencePerStep = 10.f;
+	float PatiencePerStep = 7.f; // [M4.1] was 10
 
 	// ---- Scoring (dollars) ----
 	/** Price of a dish whose Price in DT_Recipes is 0. */
@@ -227,7 +227,7 @@ public:
 	/** [M3.5] World seconds of warning before a trip: the big HUD warning and arrow show this long before anything flies.
 	 *  (After launch the warning stays up 0.75 s more.) */
 	UPROPERTY(EditAnywhere, Category = "Gus")
-	float TripWarningSeconds = 1.5f; // [M3.6] was 2.5
+	float TripWarningSeconds = 1.2f; // [M4.1] was 1.5 (2.5 before M3.6)
 
 	/** [M3.5] World seconds between Gus calling out a toss (a normal HUD message) and the throw. */
 	UPROPERTY(EditAnywhere, Category = "Gus")

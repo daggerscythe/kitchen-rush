@@ -34,7 +34,6 @@ AKRActDirector::AKRActDirector()
 	NoteThrowSteak    = NSLOCTEXT("KitchenRush", "NoteThrowSteak", "Toss it, don't walk it.\nGrab a steak, hold the left mouse button to aim, and throw it into the pan.");
 	NoteBreathe       = NSLOCTEXT("KitchenRush", "NoteBreathe", "Breathe. Look.\nEverything waits while you stand still. Step out of the knives' path, then catch what you can.");
 	NotePotOpens      = NSLOCTEXT("KitchenRush", "NotePotOpens", "My pot is out: Tomato Soup is on the menu.\nTwo chopped tomatoes in the pot, let it simmer, then ladle it into a bowl before it boils over.");
-	NotePacing        = NSLOCTEXT("KitchenRush", "NotePacing", "Two meters, one cook.\nMove in tiny bursts to land both of them in the green.");
 	NoteChainReaction = NSLOCTEXT("KitchenRush", "NoteChainReaction", "The soup's about to boil over and you can't get there.\nCan't get there? Make something get there: throw anything at the pot to knock it off the burner.");
 	NoteShelf         = NSLOCTEXT("KitchenRush", "NoteShelf", "The shelf is going!\nGrab a plate and catch the tomatoes right onto it. Mind the knives.");
 	GusDoorsOpen      = NSLOCTEXT("KitchenRush", "GusDoorsOpen", "Gus: Doors are open, chef! Here they come!");
@@ -491,16 +490,8 @@ void AKRActDirector::UpdateAct3()
 {
 	AKitchenRushGameMode* GameMode = GetGameMode();
 	AKRPot* Pot = nullptr;
-	AKRPan* Pan = nullptr;
 	for (TActorIterator<AKRPot> It(GetWorld()); It && !Pot; ++It) { Pot = *It; }
-	for (TActorIterator<AKRPan> It(GetWorld()); It && !Pan; ++It) { Pan = *It; }
-
-	// The pacing puzzle: the first time the steak and the soup are both on the heat.
-	if (!bShownPacing && Pot && Pan && Pot->IsSimmering() && Pan->IsCookingSteak())
-	{
-		bShownPacing = true;
-		Note(NotePacing);
-	}
+	// [M4.1] The pacing puzzle has no note any more: players work out the micro-bursts themselves.
 
 	// Chain reaction: Gus trips while the soup is about to boil over.
 	if (!bChainDone && ShiftSeconds >= HoursToShiftSeconds(ChainReactionHour))
@@ -620,6 +611,11 @@ void AKRActDirector::HandleEvent(const FKRGameEvent& Event)
 		if (Beat == EKRBeat::Act2_ThrowSteak && (Event.Flags & KRTrick::Pan) != 0)
 		{
 			BeginRush2();
+			// [M4.1] The lesson just gave you an onion and a steak in the pan: the first ticket uses them.
+			if (GameMode)
+			{
+				GameMode->AddOrder(SteakOnionsRow, 0.f);
+			}
 		}
 		break;
 
