@@ -115,6 +115,14 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Receipt Log")
 	float SlideDistance = 450.f;
 
+	/** [M4] Big centred text for "ACT 2 · THE DINNER RUSH" when an act starts. */
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UTextBlock> ActTitleText;
+
+	/** [M4] Real seconds the act banner stays up. */
+	UPROPERTY(EditAnywhere, Category = "Acts")
+	float ActTitleSeconds = 3.5f;
+
 	/** Real seconds a receipt stays after its last line appears (then it fades out). */
 	UPROPERTY(EditAnywhere, Category = "Receipt Log")
 	float ReceiptVisibleSeconds = 10.f;
@@ -125,6 +133,9 @@ private:
 	void UpdateHealth(); // [M3]
 	void UpdateGusWarning(); // [M3.5]
 	void UpdateReceiptLog(); // [M3.7]
+	void UpdateActTitle(float RealDeltaSeconds); // [M4]
+	double ShownActTitleTime = -100.0; // [M4] which act banner we're showing (-100 = none yet, as in the director)
+	float ActTitleAge = 0.f;          // [M4] unpaused seconds it has been up
 
 	/** [M3.7] A receipt line waiting to appear, or on screen. */
 	struct FLogLine

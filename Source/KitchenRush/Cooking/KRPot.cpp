@@ -66,6 +66,19 @@ void AKRPot::AddTomato(AKRItem* Tomato)
 	UpdateSurface();
 }
 
+// [M4]
+bool AKRPot::IsSimmering() const
+{
+	return !IsHeld() && TomatoCount >= UKRTuningData::Get(this)->SoupTomatoesNeeded && IsOnBurner();
+}
+
+// [M4]
+void AKRPot::FastForwardToBoilOver(float SecondsLeft)
+{
+	const UKRTuningData* T = UKRTuningData::Get(this);
+	SimmerSeconds = FMath::Max(SimmerSeconds, T->SoupBoilOverAt - SecondsLeft);
+}
+
 FText AKRPot::GetInteractPrompt(const AKRItem* HeldItem) const
 {
 	if (IsInFlight()) // [M3]

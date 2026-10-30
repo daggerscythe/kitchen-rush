@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "Cooking/KRTypes.h"
+#include "Flow/KRFlowTypes.h" // [M4] game events, run outcomes, results
 #include "KitchenRushGameMode.generated.h"
 
 class AKRPlate;
@@ -59,8 +60,44 @@ public:
 	/** [M3] Add tips outside of serving (dodging a knife) and show "+$1  Dodged!". */
 	void AddBonus(int32 Dollars, const FText& Reason);
 
-	/** [M3] End the night: health hit 0 or 3 strikes. M4 replaces the message with a Game Over screen. */
-	void TriggerGameOver(const FText& Reason);
+	/** [M3] End the night early: health hit 0 or 3 strikes. [M4] Shows the Game Over screen. */
+	void TriggerGameOver(const FText& Reason, EKRRunOutcome Outcome = EKRRunOutcome::Health);
+
+	// ---------------- [M4] Night flow (the act director drives these) ----------------
+
+	/** Everyone who cares about "what just happened" (act director, playtest logger) binds to this. */
+	FKROnGameEvent OnGameEvent;
+
+	/** Tell everyone something happened. */
+	void BroadcastEvent(EKRGameEvent Type, FName Name = NAME_None, float Value = 0.f, int32 Flags = 0);
+
+	/** Same, from anywhere (items, hazards): finds the GameMode for you. Does nothing if there isn't one. */
+	static void NotifyGameEvent(const UObject* WorldContext, EKRGameEvent Type, FName Name = NAME_None, float Value = 0.f, int32 Flags = 0);
+
+	/** Which recipes random orders can use. Empty = every recipe with "In Random Pool" ticked. */
+	void SetMenu(const TArray<FName>& RecipeRows);
+	void AddToMenu(FName RecipeRow);
+
+	/** How many tickets can be open at once. 0 = Max Open Tickets from DA_Tuning. */
+	void SetMaxTickets(int32 Max) { MaxTicketsOverride = Max; }
+
+	/** Put a specific ticket on the rail right now (ignores the ticket limit).
+	 *  Patience: below 0 = no patience bar (never runs out); 0 = the normal formula; above 0 = that many world seconds. */
+	void AddOrder(FName RecipeRow, float Patience = 0.f);
+
+	/** Remove every ticket (no strikes). */
+	void ClearOrders() { Orders.Empty(); }
+
+	/** Tutorial mode: no strikes; a wrong dish is handed back; a ticket that runs out of patience just refills. */
+	void SetTutorialMode(bool bEnabled) { bTutorialMode = bEnabled; }
+
+	/** Is this a full night (started at Act 1)? Only full nights count for the high score. */
+	void SetFullRun(bool bFull) { bFullRun = bFull; }
+
+	/** The night is over: show the Results (won) or Game Over screen. */
+	void EndShift(bool bWon, const FText& Reason, EKRRunOutcome Outcome);
+
+	int32 GetServedCount() const { return Served; }
 
 	/** The current message, or empty text if it has expired. */
 	FText GetMessage() const;
@@ -80,10 +117,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Kitchen Rush")
 	TObjectPtr<UDataTable> RecipeTable;
 
+	/** Random orders on/off. (Patience keeps counting down either way. [M4]) */
 	UPROPERTY(EditAnywhere, Category = "Kitchen Rush")
 	bool bOrdersEnabled = true;
 
 private:
+	int32 GetMaxTickets() const; // [M4]
 	void SpawnOrder();
 	void AddStrike(const FText& Reason);
 
@@ -104,6 +143,13 @@ private:
 	int32 Tips = 0;
 	int32 Strikes = 0;
 	bool bGameOver = false;
+
+	// [M4]
+	TArray<FName> Menu;
+	int32 MaxTicketsOverride = 0;
+	bool bTutorialMode = false;
+	bool bFullRun = false;
+	int32 Served = 0;
 
 	FText Message;
 	double MessageExpiresAt = 0.0; // real time, so messages fade even while frozen

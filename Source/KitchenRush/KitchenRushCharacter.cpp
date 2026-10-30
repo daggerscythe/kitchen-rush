@@ -10,6 +10,7 @@
 #include "InputActionValue.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Interaction/KRInteractionComponent.h"
+#include "Flow/KRProfileSubsystem.h"
 #include "Player/KRHealthComponent.h"
 #include "Player/KRThrowComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -192,9 +193,13 @@ void AKitchenRushCharacter::DoAim(float Yaw, float Pitch)
 {
 	if (GetController())
 	{
+		// [M4] Mouse sensitivity from Settings.
+		const UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this);
+		const float Sensitivity = Profile ? Profile->GetMouseSensitivity() : 1.f;
+
 		// pass the rotation inputs
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
+		AddControllerYawInput(Yaw * Sensitivity);
+		AddControllerPitchInput(Pitch * Sensitivity);
 	}
 }
 

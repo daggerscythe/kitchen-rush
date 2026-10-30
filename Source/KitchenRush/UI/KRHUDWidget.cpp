@@ -12,6 +12,8 @@
 #include "Components/ProgressBar.h"
 #include "Player/KRHealthComponent.h"
 #include "Hazards/KRGusDirector.h"
+#include "Flow/KRActDirector.h"
+#include "Kismet/GameplayStatics.h"
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/Texture2D.h"
@@ -69,6 +71,39 @@ void UKRHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	UpdateHealth(); // [M3]
 	UpdateGusWarning(); // [M3.5]
 	UpdateReceiptLog(); // [M3.7]
+	UpdateActTitle(InDeltaTime); // [M4]
+}
+
+// [M4] The act banner: shown for a few real seconds when an act starts, then fades.
+// Its clock only runs while the game isn't paused, so it isn't used up behind a note card.
+void UKRHUDWidget::UpdateActTitle(float RealDeltaSeconds)
+{
+	if (!ActTitleText)
+	{
+		return;
+	}
+	const AKRActDirector* Director = AKRActDirector::Find(this);
+	if (Director && Director->GetActTitleTime() != ShownActTitleTime)
+	{
+		ShownActTitleTime = Director->GetActTitleTime(); // a new act started
+		ActTitleAge = 0.f;
+	}
+	else if (!UGameplayStatics::IsGamePaused(this))
+	{
+		ActTitleAge += RealDeltaSeconds;
+	}
+	const float Age = Director ? ActTitleAge : 1000.f;
+	if (Age > ActTitleSeconds)
+	{
+		ActTitleText->SetVisibility(ESlateVisibility::Collapsed);
+		return;
+	}
+	ActTitleText->SetVisibility(ESlateVisibility::HitTestInvisible);
+	ActTitleText->SetText(Director->GetActTitle());
+	// Fade in over 0.3 s, fade out over the last second.
+	const float FadeIn = FMath::Clamp(Age / 0.3f, 0.f, 1.f);
+	const float FadeOut = FMath::Clamp(ActTitleSeconds - Age, 0.f, 1.f);
+	ActTitleText->SetRenderOpacity(FadeIn * FadeOut);
 }
 
 // [M3.7]
@@ -178,7 +213,8 @@ void UKRHUDWidget::UpdateGusWarning()
 	{
 		// Where is Gus relative to where we're looking? Unrotate the direction into "camera space":
 		// X = ahead, Y = right. Atan2 turns that into an angle: 0 = straight ahead, 90 = to the right.
-		const FVector ToGus = Gus->GetActorLocation() - PC->PlayerCameraManager->GetCameraLocation();
+		// [M4] Point at where the warning comes from (Gus, or the shelf).
+		const FVector ToGus = Gus->GetWarningLocation() - PC->PlayerCameraManager->GetCameraLocation();
 		const FVector Local = FRotator(0.f, PC->PlayerCameraManager->GetCameraRotation().Yaw, 0.f).UnrotateVector(ToGus);
 		const float Angle = FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X));
 		bShowArrow = FMath::Abs(Angle) > GusOnScreenAngle;
@@ -221,7 +257,10 @@ void UKRHUDWidget::UpdateClock()
 		return;
 	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
-	const float GameHours = T->ShiftStartHour + Time->GetWorldSecondsElapsed() / T->WorldSecondsPerGameHour;
+	// [M4] With an act director, the clock is the night's clock (frozen at 5:00 PM in Act 1).
+	const AKRActDirector* Director = AKRActDirector::Find(this);
+	const float GameHours = Director ? Director->GetClockHours()
+		: T->ShiftStartHour + Time->GetWorldSecondsElapsed() / T->WorldSecondsPerGameHour;
 	const int32 Hour24 = FMath::FloorToInt(GameHours) % 24;
 	const int32 Minute = FMath::FloorToInt(FMath::Frac(GameHours) * 60.f);
 	int32 Hour12 = Hour24 % 12;
@@ -299,6 +338,7 @@ void UKRHUDWidget::UpdateOrders()
 	// (If a ticket widget failed to create, the lists can differ in length; stop at the shorter.)
 	for (int32 i = 0; i < Orders.Num() && i < TicketWidgets.Num(); ++i)
 	{
-		TicketWidgets[i]->SetPatience(Orders[i].PatienceLeft / Orders[i].PatienceTotal);
+		// [M4] A ticket without patience (Act 1's first order) hides its bar: SetPatience(-1).
+		TicketWidgets[i]->SetPatience(Orders[i].PatienceTotal > 0.f ? Orders[i].PatienceLeft / Orders[i].PatienceTotal : -1.f);
 	}
 }

@@ -111,6 +111,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Scoring", meta = (ClampMin = "1"))
 	int32 MaxStrikes = 3;
 
+	/** [M4] Stars on the Results screen: surviving the night = 1 star; these tips add the 2nd and 3rd.
+	 *  Placeholders: the plan sets the real values after playtest round 2. */
+	UPROPERTY(EditAnywhere, Category = "Scoring")
+	int32 TwoStarTips = 120;
+
+	UPROPERTY(EditAnywhere, Category = "Scoring")
+	int32 ThreeStarTips = 220;
+
 	// ---- Shift clock ----
 	UPROPERTY(EditAnywhere, Category = "Shift Clock")
 	float ShiftStartHour = 17.f;

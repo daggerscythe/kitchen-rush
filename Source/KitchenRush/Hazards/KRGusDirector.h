@@ -16,6 +16,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Cooking/KRTypes.h"
 #include "KRGusDirector.generated.h"
 
 class AKRItem;
@@ -69,9 +70,17 @@ struct FKRGusEvent
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gus", meta = (ClampMin = "0"))
 	float WarningSeconds = 0.f;
 
+	/** [M4] Launch from an actor with this Tag (e.g. "Shelf" for the shelf collapse) instead of from Gus.
+	 *  Give any actor in the level the tag under Details > Actor > Tags. Empty = from Gus. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gus")
+	FName OriginTag;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gus")
 	TArray<FKRGusLaunch> Launches;
 };
+
+/** [M4] Fired when an event's launches start (the act director uses it for the first-trip auto-freeze). */
+DECLARE_MULTICAST_DELEGATE_OneParam(FKROnGusEventLaunched, FName /*EventName*/);
 
 UCLASS()
 class KITCHENRUSH_API AKRGusDirector : public AActor
@@ -94,9 +103,34 @@ public:
 	/** Spawn ItemClass at Gus and launch it. Returns the item (or nullptr). */
 	AKRItem* LaunchItem(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim);
 
-	/** Turn the automatic toss/trip timers on or off (M4 turns them off and scripts events instead). */
+	/** [M4] Same, but launched from Origin (the shelf, say) instead of from Gus. */
+	AKRItem* LaunchItemFrom(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim, const FVector& Origin);
+
+	/** Turn the automatic toss/trip timers on or off. [M4] Sets both of the switches below. */
 	UFUNCTION(BlueprintCallable, Category = "Gus")
-	void SetAutoEvents(bool bEnabled) { bAutoEvents = bEnabled; }
+	void SetAutoEvents(bool bEnabled) { bAutoToss = bEnabled; bAutoTrips = bEnabled; }
+
+	/** [M4] The act director switches these separately (tosses from Act 2, timed trips after the first scripted one). */
+	void SetAutoToss(bool bEnabled) { bAutoToss = bEnabled; }
+	void SetAutoTrips(bool bEnabled) { bAutoTrips = bEnabled; }
+
+	/** [M4] Restart the timed-trip countdown (after a scripted trip, so two don't land back to back). */
+	void ResetTripTimer();
+
+	/** [M4] If a timed trip would land within ~12 s of a scripted beat SecondsUntil away, push it past the beat. */
+	void KeepAutoTripAwayFrom(float SecondsUntil);
+
+	/** [M4] The food class for a type (from Food Classes), e.g. the onion for Act 2's "Heads up!". */
+	TSubclassOf<AKRFood> FindFoodClass(EKRFoodType Type) const;
+
+	/** [M4] Is this event in the Events list? */
+	bool HasEvent(FName EventName) const;
+
+	/** [M4] Where the current warning comes from (Gus, or the shelf): the HUD arrow points here. */
+	FVector GetWarningLocation() const { return WarningLocation; }
+
+	/** [M4] Broadcast when an event's launches begin. */
+	FKROnGusEventLaunched OnEventLaunched;
 
 	/** [M3.5] For the HUD: is a big trip warning up right now, and what does it say?
 	 *  [M3.6] Only trips (events) use it; tosses are a normal message. */
@@ -126,7 +160,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Gus")
 	TArray<FKRGusEvent> Events;
 
-	/** Toss every TossInterval and trip every TripInterval (both in DA_Tuning). */
+	/** Toss every TossInterval and trip every TripInterval (both in DA_Tuning).
+	 *  [M4] With a BP_ActDirector in the level, the director switches these on and off per act. */
 	UPROPERTY(EditAnywhere, Category = "Gus")
 	bool bAutoEvents = true;
 
@@ -143,7 +178,8 @@ protected:
 	float ScatterRadius = 200.f;
 
 private:
-	FVector GetAimPoint(EKRGusAim Aim) const;
+	FVector GetAimPoint(EKRGusAim Aim, const FVector& Origin) const;
+	FVector FindOrigin(FName Tag) const; // [M4]
 	void Shout(const FText& Text) const;
 
 	// [M3.5] The one thing Gus is about to do once the warning runs out.
@@ -162,4 +198,9 @@ private:
 	float SecondsToToss = 0.f;
 	float SecondsToTrip = 0.f;
 	bool bWarnedEmptyClass = false;
+
+	// [M4]
+	bool bAutoToss = true;
+	bool bAutoTrips = true;
+	FVector WarningLocation = FVector::ZeroVector;
 };

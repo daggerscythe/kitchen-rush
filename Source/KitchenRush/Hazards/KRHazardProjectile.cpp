@@ -116,6 +116,7 @@ void AKRHazardProjectile::KnifeHit(AActor* OtherActor, const FHitResult& Hit)
 		{
 			Health->ApplyDamage(T->KnifeHitDamage);
 		}
+		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::KnifeHit); // [M4]
 		// Clatter to the floor and vanish.
 		Mesh->SetEnableGravity(true);
 		SetLifeSpan(3.f);

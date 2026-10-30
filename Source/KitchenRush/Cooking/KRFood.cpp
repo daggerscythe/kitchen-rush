@@ -3,6 +3,7 @@
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
+#include "KitchenRushGameMode.h" // [M4] game events
 #include "Interaction/KRInteractionComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -59,6 +60,7 @@ void AKRFood::UpdateCookLook()
 	else if (ShownCookStage == 3)
 	{
 		NewMaterial = BurntMaterial;
+		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::SteakBurnt); // [M4]
 	}
 	if (NewMaterial)
 	{

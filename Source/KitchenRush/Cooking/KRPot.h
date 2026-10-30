@@ -23,6 +23,12 @@ public:
 
 	bool IsSoupReady() const;
 
+	/** [M4] All the tomatoes are in and it's on a burner (so it's heading for boil-over). */
+	bool IsSimmering() const;
+
+	/** [M4] Jump the simmer forward so it boils over in SecondsLeft world seconds (the Act 3 chain reaction). */
+	void FastForwardToBoilOver(float SecondsLeft);
+
 	// [M3] A chopped tomato thrown at the pot (or caught while holding it) goes in.
 	virtual bool CanReceiveItem(const AKRItem* Item) const override;
 	virtual bool ReceiveThrownItem(AKRItem* Item) override;

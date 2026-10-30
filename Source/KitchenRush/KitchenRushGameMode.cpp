@@ -6,6 +6,8 @@
 #include "Engine/DataTable.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
+#include "Flow/KRProfileSubsystem.h"
+#include "KitchenRushPlayerController.h"
 
 AKitchenRushGameMode::AKitchenRushGameMode()
 {
@@ -17,6 +19,13 @@ void AKitchenRushGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	SecondsUntilNextOrder = UKRTuningData::Get(this)->FirstOrderDelay;
+
+	// [M4] Saved settings (time modes, UI scale) apply to every level.
+	if (const UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this))
+	{
+		Profile->ApplySettings(GetWorld());
+	}
+
 	if (!RecipeTable)
 	{
 		ShowMessage(NSLOCTEXT("KitchenRush", "NoRecipes", "Set Recipe Table in BP_FirstPersonGameMode!"));
@@ -36,16 +45,27 @@ const FKRRecipeRow* AKitchenRushGameMode::FindRecipe(FName RowName) const
 void AKitchenRushGameMode::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	if (bGameOver || !bOrdersEnabled)
+	if (bGameOver)
 	{
 		return;
 	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
 
 	// 1) Count down patience. Walk backwards so removing an order doesn't skip the next one.
+	// [M4] This runs even when random orders are off, so the act director's own tickets count down too.
 	for (int32 i = Orders.Num() - 1; i >= 0; --i)
 	{
+		if (Orders[i].PatienceTotal <= 0.f)
+		{
+			continue; // [M4] a ticket without a patience bar never runs out
+		}
 		Orders[i].PatienceLeft -= DeltaSeconds;
+		if (Orders[i].PatienceLeft <= 0.f && bTutorialMode)
+		{
+			Orders[i].PatienceLeft = Orders[i].PatienceTotal; // [M4] the tutorial is forgiving: just refill
+			ShowMessage(NSLOCTEXT("KitchenRush", "TutorialPatience", "Out of patience! In the real rush that's a strike. Try again."));
+			continue;
+		}
 		if (Orders[i].PatienceLeft <= 0.f)
 		{
 			const FKRRecipeRow* Recipe = FindRecipe(Orders[i].RecipeRow);
@@ -60,12 +80,16 @@ void AKitchenRushGameMode::Tick(float DeltaSeconds)
 	}
 
 	// 2) Spawn new tickets. Never leave the player with nothing to do for long.
+	if (!bOrdersEnabled)
+	{
+		return; // [M4]
+	}
 	SecondsUntilNextOrder -= DeltaSeconds;
 	if (Orders.Num() == 0)
 	{
 		SecondsUntilNextOrder = FMath::Min(SecondsUntilNextOrder, T->FirstOrderDelay);
 	}
-	if (SecondsUntilNextOrder <= 0.f && Orders.Num() < T->MaxOpenTickets)
+	if (SecondsUntilNextOrder <= 0.f && Orders.Num() < GetMaxTickets())
 	{
 		SpawnOrder();
 		SecondsUntilNextOrder = T->NewOrderInterval;
@@ -85,14 +109,77 @@ void AKitchenRushGameMode::SpawnOrder()
 	{
 		return;
 	}
+	AddOrder(Picked, 0.f); // [M4] the normal patience formula
+}
+
+// [M4]
+void AKitchenRushGameMode::AddOrder(FName RecipeRow, float Patience)
+{
+	const FKRRecipeRow* Recipe = FindRecipe(RecipeRow);
+	if (!Recipe)
+	{
+		return;
+	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
 
 	FKROrder Order;
 	Order.Id = NextOrderId++;
-	Order.RecipeRow = Picked;
-	Order.PatienceTotal = T->PatienceBase + T->PatiencePerStep * Recipe->Steps;
+	Order.RecipeRow = RecipeRow;
+	if (Patience < 0.f)
+	{
+		Order.PatienceTotal = 0.f; // no patience bar
+	}
+	else if (Patience > 0.f)
+	{
+		Order.PatienceTotal = Patience;
+	}
+	else
+	{
+		Order.PatienceTotal = T->PatienceBase + T->PatiencePerStep * Recipe->Steps;
+	}
 	Order.PatienceLeft = Order.PatienceTotal;
 	Orders.Add(Order);
+}
+
+// [M4]
+int32 AKitchenRushGameMode::GetMaxTickets() const
+{
+	return MaxTicketsOverride > 0 ? MaxTicketsOverride : UKRTuningData::Get(this)->MaxOpenTickets;
+}
+
+// [M4]
+void AKitchenRushGameMode::SetMenu(const TArray<FName>& RecipeRows)
+{
+	Menu = RecipeRows;
+	RecipeBag.Empty(); // reshuffle with the new menu
+}
+
+// [M4]
+void AKitchenRushGameMode::AddToMenu(FName RecipeRow)
+{
+	Menu.AddUnique(RecipeRow);
+	RecipeBag.Empty();
+}
+
+// [M4]
+void AKitchenRushGameMode::BroadcastEvent(EKRGameEvent Type, FName Name, float Value, int32 Flags)
+{
+	FKRGameEvent Event;
+	Event.Type = Type;
+	Event.Name = Name;
+	Event.Value = Value;
+	Event.Flags = Flags;
+	OnGameEvent.Broadcast(Event);
+}
+
+// [M4]
+void AKitchenRushGameMode::NotifyGameEvent(const UObject* WorldContext, EKRGameEvent Type, FName Name, float Value, int32 Flags)
+{
+	const UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+	if (AKitchenRushGameMode* GameMode = World ? World->GetAuthGameMode<AKitchenRushGameMode>() : nullptr)
+	{
+		GameMode->BroadcastEvent(Type, Name, Value, Flags);
+	}
 }
 
 // [M3.5] A "shuffle bag", like a deck of cards: put one of each dish in, shuffle, deal from the top,
@@ -101,12 +188,20 @@ FName AKitchenRushGameMode::DrawRecipe()
 {
 	if (RecipeBag.Num() == 0)
 	{
-		for (const FName& RowName : RecipeTable->GetRowNames())
+		// [M4] The act's menu if there is one, otherwise every recipe in the random pool.
+		if (Menu.Num() > 0)
 		{
-			const FKRRecipeRow* Recipe = FindRecipe(RowName);
-			if (Recipe && Recipe->bInRandomPool)
+			RecipeBag = Menu;
+		}
+		else
+		{
+			for (const FName& RowName : RecipeTable->GetRowNames())
 			{
-				RecipeBag.Add(RowName);
+				const FKRRecipeRow* Recipe = FindRecipe(RowName);
+				if (Recipe && Recipe->bInRandomPool)
+				{
+					RecipeBag.Add(RowName);
+				}
 			}
 		}
 		if (RecipeBag.Num() == 0)
@@ -229,10 +324,19 @@ bool AKitchenRushGameMode::ServeDish(AKRPlate* Plate, bool bThrownIntoPass)
 		return false;
 	}
 
+	const UKRTuningData* T = UKRTuningData::Get(this);
+	const FKRRecipeRow* Recipe = FindRecipe(Orders[BestIndex].RecipeRow);
+
+	// [M4] Tutorial: hand a wrong dish back instead of taking it (no strike, the ticket stays).
+	if (bTutorialMode && Best.Correctness < 1.f)
+	{
+		ShowMessage(FText::Format(NSLOCTEXT("KitchenRush", "TutorialWrong", "Not quite. Check the ticket: {0}."), Recipe->DisplayName));
+		BroadcastEvent(EKRGameEvent::DishRejected, Orders[BestIndex].RecipeRow);
+		return false;
+	}
+
 	const FKROrder Order = Orders[BestIndex];
 	Orders.RemoveAt(BestIndex);
-	const FKRRecipeRow* Recipe = FindRecipe(Order.RecipeRow);
-	const UKRTuningData* T = UKRTuningData::Get(this);
 
 	if (Best.Correctness < T->BadOrderThreshold)
 	{
@@ -303,21 +407,28 @@ bool AKitchenRushGameMode::ServeDish(AKRPlate* Plate, bool bThrownIntoPass)
 	Receipt.Lines.Add(TotalLine);
 
 	Tips += Total;
+	++Served; // [M4]
 	Receipts.Add(Receipt);
 	if (Receipts.Num() > 10)
 	{
 		Receipts.RemoveAt(0); // the HUD only needs the recent ones
 	}
+	BroadcastEvent(EKRGameEvent::DishServed, Order.RecipeRow, Best.Correctness); // [M4]
 	return true;
 }
 
 void AKitchenRushGameMode::AddStrike(const FText& Reason)
 {
+	if (bTutorialMode)
+	{
+		return; // [M4] no strikes while Nana is teaching
+	}
 	++Strikes;
+	BroadcastEvent(EKRGameEvent::Strike); // [M4]
 	const int32 MaxStrikes = UKRTuningData::Get(this)->MaxStrikes;
 	if (Strikes >= MaxStrikes)
 	{
-		TriggerGameOver(FText::Format(NSLOCTEXT("KitchenRush", "StrikeOut", "{0}  Strike {1}!"), Reason, Strikes)); // [M3]
+		TriggerGameOver(FText::Format(NSLOCTEXT("KitchenRush", "StrikeOut", "{0}  Strike {1}!"), Reason, Strikes), EKRRunOutcome::Strikes);
 		return;
 	}
 	ShowMessage(FText::Format(NSLOCTEXT("KitchenRush", "Strike", "{0}  Strike {1}/{2}"), Reason, Strikes, MaxStrikes));
@@ -325,10 +436,6 @@ void AKitchenRushGameMode::AddStrike(const FText& Reason)
 
 void AKitchenRushGameMode::ShowMessage(const FText& Text, float Seconds)
 {
-	if (bGameOver && !Text.EqualTo(Message) && MessageExpiresAt > GetWorld()->GetRealTimeSeconds() + 100.0)
-	{
-		return; // [M3] keep the Game Over message up
-	}
 	Message = Text;
 	MessageExpiresAt = GetWorld()->GetRealTimeSeconds() + Seconds;
 }
@@ -344,8 +451,14 @@ void AKitchenRushGameMode::AddBonus(int32 Dollars, const FText& Reason)
 	ShowMessage(FText::Format(NSLOCTEXT("KitchenRush", "Bonus", "+${0}  {1}"), Dollars, Reason));
 }
 
-// [M3]
-void AKitchenRushGameMode::TriggerGameOver(const FText& Reason)
+// [M3] [M4] now a thin wrapper: losing is just EndShift without winning.
+void AKitchenRushGameMode::TriggerGameOver(const FText& Reason, EKRRunOutcome Outcome)
+{
+	EndShift(false, Reason, Outcome);
+}
+
+// [M4]
+void AKitchenRushGameMode::EndShift(bool bWon, const FText& Reason, EKRRunOutcome Outcome)
 {
 	if (bGameOver)
 	{
@@ -353,12 +466,32 @@ void AKitchenRushGameMode::TriggerGameOver(const FText& Reason)
 	}
 	bGameOver = true;
 	Orders.Empty();
-	ShowMessage(FText::Format(NSLOCTEXT("KitchenRush", "GameOver", "{0}  GAME OVER  (${1} in tips)"), Reason, Tips), 100000.f);
 
-	// Stop the player walking (you can still look around). M4 adds the Game Over screen and restart.
-	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	const UKRTuningData* T = UKRTuningData::Get(this);
+	FKRResults Results;
+	Results.bWon = bWon;
+	Results.Reason = Reason;
+	Results.Tips = Tips;
+	Results.Served = Served;
+	Results.Strikes = Strikes;
+	// Stars: surviving the night is 1; the tip thresholds (set after playtest 2) add the others.
+	if (bWon)
 	{
-		PC->SetIgnoreMoveInput(true);
+		Results.Stars = 1 + (Tips >= T->TwoStarTips ? 1 : 0) + (Tips >= T->ThreeStarTips ? 1 : 0);
+	}
+
+	// Only a full night (started at Act 1) can set the high score.
+	if (UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this))
+	{
+		Results.bNewBest = bFullRun && Profile->RecordTips(Tips, bWon);
+		Results.Best = Profile->GetHighScore();
+	}
+
+	BroadcastEvent(EKRGameEvent::RunEnded, NAME_None, float(Tips), int32(Outcome));
+
+	if (AKitchenRushPlayerController* PC = Cast<AKitchenRushPlayerController>(GetWorld()->GetFirstPlayerController()))
+	{
+		PC->ShowResults(Results);
 	}
 }
 

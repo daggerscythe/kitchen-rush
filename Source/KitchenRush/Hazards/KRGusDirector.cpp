@@ -51,6 +51,61 @@ void AKRGusDirector::BeginPlay()
 	const UKRTuningData* T = UKRTuningData::Get(this);
 	SecondsToToss = T->TossInterval;
 	SecondsToTrip = T->FirstTripDelay > 0.f ? T->FirstTripDelay : T->TripInterval; // [M3.5]
+	WarningLocation = GetActorLocation();
+	if (!bAutoEvents)
+	{
+		SetAutoEvents(false); // [M4] the old single switch still works
+	}
+}
+
+// [M4]
+void AKRGusDirector::ResetTripTimer()
+{
+	SecondsToTrip = UKRTuningData::Get(this)->TripInterval;
+}
+
+// [M4]
+void AKRGusDirector::KeepAutoTripAwayFrom(float SecondsUntil)
+{
+	if (bAutoTrips && FMath::Abs(SecondsToTrip - SecondsUntil) < 12.f)
+	{
+		SecondsToTrip = SecondsUntil + 12.f;
+	}
+}
+
+// [M4]
+TSubclassOf<AKRFood> AKRGusDirector::FindFoodClass(EKRFoodType Type) const
+{
+	for (const TSubclassOf<AKRFood>& FoodClass : FoodClasses)
+	{
+		if (FoodClass && FoodClass->GetDefaultObject<AKRFood>()->FoodType == Type)
+		{
+			return FoodClass;
+		}
+	}
+	return nullptr;
+}
+
+// [M4]
+bool AKRGusDirector::HasEvent(FName EventName) const
+{
+	return Events.ContainsByPredicate([EventName](const FKRGusEvent& E) { return E.Name == EventName; });
+}
+
+// [M4] An actor with this tag, or Gus himself.
+FVector AKRGusDirector::FindOrigin(FName Tag) const
+{
+	if (!Tag.IsNone())
+	{
+		for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+		{
+			if (It->ActorHasTag(Tag))
+			{
+				return It->GetActorLocation();
+			}
+		}
+	}
+	return GetActorLocation();
 }
 
 // [M3.5]
@@ -78,6 +133,7 @@ void AKRGusDirector::RunPending()
 		if (const FKRGusEvent* Event = Events.FindByPredicate([Name](const FKRGusEvent& E) { return E.Name == Name; }))
 		{
 			LaunchEventRows(*Event);
+			OnEventLaunched.Broadcast(Name); // [M4]
 		}
 	}
 }
@@ -128,13 +184,9 @@ void AKRGusDirector::Tick(float DeltaSeconds)
 		WarningHoldLeft -= DeltaSeconds;
 	}
 
-	if (!bAutoEvents)
-	{
-		return;
-	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
 
-	if (T->TossInterval > 0.f)
+	if (bAutoToss && T->TossInterval > 0.f) // [M4] separate switches
 	{
 		SecondsToToss -= DeltaSeconds;
 		if (SecondsToToss <= 0.f)
@@ -150,7 +202,7 @@ void AKRGusDirector::Tick(float DeltaSeconds)
 			}
 		}
 	}
-	if (T->TripInterval > 0.f)
+	if (bAutoTrips && T->TripInterval > 0.f) // [M4]
 	{
 		SecondsToTrip -= DeltaSeconds;
 		if (SecondsToTrip <= 0.f)
@@ -245,6 +297,7 @@ bool AKRGusDirector::PlayEvent(FName EventName)
 	// [M3.5] Warn first; Tick calls LaunchEventRows when the warning runs out.
 	Pending = EPending::Event;
 	PendingEvent = EventName;
+	WarningLocation = FindOrigin(Event->OriginTag); // [M4] the HUD arrow points here
 	StartWarning(Event->Shout, Event->WarningSeconds > 0.f ? Event->WarningSeconds : UKRTuningData::Get(this)->TripWarningSeconds);
 	return true;
 }
@@ -253,6 +306,7 @@ bool AKRGusDirector::PlayEvent(FName EventName)
 void AKRGusDirector::LaunchEventRows(const FKRGusEvent& Event)
 {
 	const FName EventName = Event.Name;
+	const FVector Origin = FindOrigin(Event.OriginTag); // [M4] Gus, or e.g. the shelf
 	for (const FKRGusLaunch& Launch : Event.Launches)
 	{
 		if (!Launch.ItemClass)
@@ -266,26 +320,26 @@ void AKRGusDirector::LaunchEventRows(const FKRGusEvent& Event)
 		}
 		if (Launch.Delay <= 0.f)
 		{
-			LaunchItem(Launch.ItemClass, Launch.Aim);
+			LaunchItemFrom(Launch.ItemClass, Launch.Aim, Origin);
 			continue;
 		}
 		// World timers run on world time, so a frozen player also freezes the rest of the burst.
 		FTimerHandle Handle;
 		const TSubclassOf<AKRItem> ItemClass = Launch.ItemClass;
 		const EKRGusAim Aim = Launch.Aim;
-		GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(this, [this, ItemClass, Aim]()
+		GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(this, [this, ItemClass, Aim, Origin]()
 		{
-			LaunchItem(ItemClass, Aim);
+			LaunchItemFrom(ItemClass, Aim, Origin);
 		}), Launch.Delay, false);
 	}
 }
 
-FVector AKRGusDirector::GetAimPoint(EKRGusAim Aim) const
+FVector AKRGusDirector::GetAimPoint(EKRGusAim Aim, const FVector& Origin) const
 {
 	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
 	if (!Player)
 	{
-		return GetActorLocation() + GetActorForwardVector() * 300.f;
+		return Origin + GetActorForwardVector() * 300.f;
 	}
 	const FVector PlayerLocation = Player->GetActorLocation(); // middle of the capsule, about 1 m up
 	const FVector Chest = PlayerLocation + FVector(0.f, 0.f, 30.f);
@@ -296,7 +350,7 @@ FVector AKRGusDirector::GetAimPoint(EKRGusAim Aim) const
 		return Chest;
 	case EKRGusAim::InFrontOfPlayer:
 	{
-		const FVector TowardGus = (GetActorLocation() - PlayerLocation).GetSafeNormal2D();
+		const FVector TowardGus = (Origin - PlayerLocation).GetSafeNormal2D(); // [M4] toward wherever it's thrown from
 		return Chest + TowardGus * CatchPointDistance;
 	}
 	case EKRGusAim::NearPlayer:
@@ -310,14 +364,20 @@ FVector AKRGusDirector::GetAimPoint(EKRGusAim Aim) const
 
 AKRItem* AKRGusDirector::LaunchItem(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim)
 {
+	return LaunchItemFrom(ItemClass, Aim, GetActorLocation()); // [M4]
+}
+
+// [M4] (was the body of LaunchItem)
+AKRItem* AKRGusDirector::LaunchItemFrom(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim, const FVector& Origin)
+{
 	if (!ItemClass)
 	{
 		return nullptr;
 	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
 	const FVector2D Spread = FMath::RandPointInCircle(SpawnSpread);
-	const FVector Start = GetActorLocation() + FVector(Spread.X, Spread.Y, FMath::FRandRange(-SpawnSpread, SpawnSpread) * 0.5f);
-	const FVector Target = GetAimPoint(Aim);
+	const FVector Start = Origin + FVector(Spread.X, Spread.Y, FMath::FRandRange(-SpawnSpread, SpawnSpread) * 0.5f);
+	const FVector Target = GetAimPoint(Aim, Origin);
 
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

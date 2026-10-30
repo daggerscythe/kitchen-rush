@@ -6,6 +6,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
+#include "KitchenRushGameMode.h" // [M4] game events
 
 AKRItem::AKRItem()
 {
@@ -139,6 +140,10 @@ bool AKRItem::CatchBy(UKRInteractionComponent* Interactor)
 	{
 		bWasCaughtFromGus = true;
 	}
+	if (bCaught)
+	{
+		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::Catch, NAME_None, bFromGus ? 1.f : 0.f); // [M4]
+	}
 	return bCaught;
 }
 
@@ -192,12 +197,14 @@ bool AKRItem::TryLandIn(AActor* OtherActor)
 	// [M3.7] Mark this place BEFORE ReceiveThrownItem: the pot reads the marks, then destroys the tomato.
 	// A bit per place, so throwing the same tomato onto the board ten times still counts once.
 	const uint8 OldMask = TrickShotMask;
-	if (!bLaunchedByGus)
-	{
-		TrickShotMask |= Target->GetTrickShotFlag();
-	}
+	const uint8 Place = bLaunchedByGus ? 0 : Target->GetTrickShotFlag();
+	TrickShotMask |= Place;
 	if (Target->ReceiveThrownItem(this))
 	{
+		if (Place != 0)
+		{
+			AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::TrickShot, NAME_None, 0.f, Place); // [M4]
+		}
 		return true;
 	}
 	TrickShotMask = OldMask;

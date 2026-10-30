@@ -19,6 +19,9 @@ class KITCHENRUSH_API AKRPan : public AKRCookware
 public:
 	AKRPan();
 
+	/** [M4] A steak is in the pan and the pan is on a burner. */
+	bool IsCookingSteak() const { return Steak != nullptr && IsOnBurner(); }
+
 	virtual FText GetInteractPrompt(const AKRItem* HeldItem) const override;
 	virtual bool Interact(UKRInteractionComponent* Interactor) override;
 
