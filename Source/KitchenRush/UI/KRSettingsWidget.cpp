@@ -44,11 +44,11 @@ void UKRSettingsWidget::RefreshTexts()
 	}
 	if (SensitivityText)
 	{
-		SensitivityText->SetText(FText::FromString(FString::Printf(TEXT("%.2fx"), SensitivitySlider->GetValue())));
+		SensitivityText->SetText(FText::FromString(FString::Printf(TEXT("SENSITIVITY: %.2fx"), SensitivitySlider->GetValue()))); // [M4.2] label
 	}
 	if (UIScaleText)
 	{
-		UIScaleText->SetText(FText::FromString(FString::Printf(TEXT("%.2fx"), UIScaleSlider->GetValue())));
+		UIScaleText->SetText(FText::FromString(FString::Printf(TEXT("UI SCALE: %.2fx"), UIScaleSlider->GetValue()))); // [M4.2] label
 	}
 	StillModeText->SetText(Profile->GetStillMode() == EKRStillMode::Freeze
 		? NSLOCTEXT("KitchenRush", "StillFreeze", "Standing still: Freeze")

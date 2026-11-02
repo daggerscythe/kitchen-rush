@@ -30,5 +30,5 @@ Plugins/**/Intermediate/
 
 # Packaged builds (package outside the repo; they go to Box, not GitHub)
 Packaged/
-Build/Windows/
-Build/Linux/
+Builds/
+Build/

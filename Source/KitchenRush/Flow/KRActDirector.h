@@ -111,6 +111,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Timeline") float SpecialHour = 21.6667f;
 	UPROPERTY(EditAnywhere, Category = "Timeline") float EndHour = 22.f;
 
+	/** [M4.2] How long Act 2 (5:00 to 7:30 PM) lasts, in world seconds. Its clock runs faster to fit,
+	 *  so the beats keep their times. 0 = the normal clock (World Seconds Per Game Hour in DA_Tuning: 150 s). */
+	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (ClampMin = "0")) float Act2WorldSeconds = 100.f;
+
 	/** World seconds of patience on the tutorial steak (the first patience bar the player sees). */
 	UPROPERTY(EditAnywhere, Category = "Timeline") float TutorialSteakPatience = 120.f;
 
@@ -163,6 +167,9 @@ private:
 	void DropShelfBoards();
 	void ShowActTitle(const FText& Title);
 	float HoursToShiftSeconds(float Hours) const;
+
+	/** [M4.2] How many clock seconds pass per world second right now (faster than 1 in a shortened Act 2). */
+	float GetClockSpeed() const;
 
 	/** World seconds until the next scripted trip-like beat (so Gus's timed trips stay clear of it). */
 	float SecondsToNextScriptedBeat() const;

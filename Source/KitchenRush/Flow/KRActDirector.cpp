@@ -129,6 +129,17 @@ float AKRActDirector::HoursToShiftSeconds(float Hours) const
 	return (Hours - T->ShiftStartHour) * T->WorldSecondsPerGameHour;
 }
 
+// [M4.2]
+float AKRActDirector::GetClockSpeed() const
+{
+	if (CurrentAct == 2 && Act2WorldSeconds > 0.f)
+	{
+		const float ClockSecondsInAct2 = HoursToShiftSeconds(Act3Hour); // 5:00 to 7:30 PM on the normal clock
+		return FMath::Max(ClockSecondsInAct2 / Act2WorldSeconds, 0.01f);
+	}
+	return 1.f;
+}
+
 float AKRActDirector::GetClockHours() const
 {
 	const UKRTuningData* T = UKRTuningData::Get(this);
@@ -394,7 +405,7 @@ void AKRActDirector::Tick(float DeltaSeconds)
 
 	if (bClockRunning)
 	{
-		ShiftSeconds += DeltaSeconds;
+		ShiftSeconds += DeltaSeconds * GetClockSpeed(); // [M4.2] Act 2 can run fast
 	}
 
 	// Auto-freeze: the note pauses the game at the peak of the burst.
@@ -545,7 +556,7 @@ float AKRActDirector::SecondsToNextScriptedBeat() const
 	float Next = -1.f;
 	auto Consider = [this, &Next](bool bDone, float Hour)
 	{
-		const float Until = HoursToShiftSeconds(Hour) - ShiftSeconds;
+		const float Until = (HoursToShiftSeconds(Hour) - ShiftSeconds) / GetClockSpeed(); // [M4.2] in world seconds
 		if (!bDone && Until > 0.f && (Next < 0.f || Until < Next))
 		{
 			Next = Until;
