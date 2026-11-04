@@ -8,6 +8,7 @@
 #include "KRCookware.generated.h"
 
 class UWidgetComponent;
+class UAudioComponent; // [M4.3]
 
 UCLASS(Abstract)
 class KITCHENRUSH_API AKRCookware : public AKRItem
@@ -31,6 +32,13 @@ protected:
 
 	/** Called every frame. Children call SetMeter() here. */
 	virtual void UpdateMeter() {}
+
+	/** [M4.3] Called every frame. Children start/stop CookLoop here (the pan sizzles, the pot bubbles). */
+	virtual void UpdateCookSound() {}
+
+	/** [M4.3] The cooking loop that's playing, if any. */
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> CookLoop;
 
 	/** Show/hide and fill the floating meter. */
 	void SetMeter(bool bVisible, float Percent, const FLinearColor& Color, const FText& Label);

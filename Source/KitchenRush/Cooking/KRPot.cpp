@@ -1,6 +1,7 @@
 // KRPot.cpp 
 
 #include "Cooking/KRPot.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
@@ -61,6 +62,7 @@ void AKRPot::AddTomato(AKRItem* Tomato)
 		TomatoTally.GusAssists += Part.GusAssists;
 		TomatoTally.GroundTouches += Part.GroundTouches;
 	}
+	UKRAudioSubsystem::PlayAt(this, EKRSound::Plop, GetActorLocation()); // [M4.3]
 	Tomato->Destroy(); // the tomato goes into the soup
 	++TomatoCount;
 	UpdateSurface();
@@ -144,7 +146,13 @@ void AKRPot::Cook(float WorldSeconds)
 	{
 		return;
 	}
+	const float Before = SimmerSeconds; // [M4.3]
 	SimmerSeconds += WorldSeconds;
+	// [M4.3] Ding: the soup just became ready.
+	if (Before < T->SoupReadyAt && SimmerSeconds >= T->SoupReadyAt)
+	{
+		UKRAudioSubsystem::PlayAt(this, EKRSound::CookDone, GetActorLocation());
+	}
 	if (SimmerSeconds >= T->SoupBoilOverAt)
 	{
 		BoilOver();
@@ -155,6 +163,7 @@ void AKRPot::Cook(float WorldSeconds)
 void AKRPot::BoilOver()
 {
 	const UKRTuningData* T = UKRTuningData::Get(this);
+	UKRAudioSubsystem::PlayAt(this, EKRSound::BoilOver, GetActorLocation()); // [M4.3] hiss
 
 	UClass* ZoneClass = SpillClass ? SpillClass.Get() : AKRHazardZone::StaticClass();
 	FActorSpawnParameters Params;
@@ -168,6 +177,12 @@ void AKRPot::BoilOver()
 		GameMode->ShowMessage(NSLOCTEXT("KitchenRush", "BoiledOver", "The soup boiled over! Scalding spill, keep clear."));
 	}
 	ResetPot();
+}
+
+// [M4.3] Bubble while the soup simmers.
+void AKRPot::UpdateCookSound()
+{
+	UKRAudioSubsystem::UpdateLoop(this, CookLoop, EKRSound::PotBubble, IsSimmering(), Mesh);
 }
 
 void AKRPot::UpdateMeter()

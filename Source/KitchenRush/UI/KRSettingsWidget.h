@@ -1,6 +1,6 @@
 // KRSettingsWidget.h
-// [M4] Settings, from the main menu or the pause menu. Everything saves as soon as it changes.
-// WBP_Settings is its Blueprint. (Master volume arrives with the audio, later.)
+// Settings, from the main menu or the pause menu. Everything saves as soon as it changes.
+// WBP_Settings is its Blueprint. Optional volume sliders: add them to WBP_Settings if you want them.
 
 #pragma once
 
@@ -28,6 +28,14 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<USlider> UIScaleSlider;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> UIScaleText;
 
+	/** Optional: Sliders named MasterVolumeSlider / MusicVolumeSlider (and Texts for their labels). 0% to 100%. */
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<USlider> MasterVolumeSlider;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> MasterVolumeText;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<USlider> MusicVolumeSlider;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> MusicVolumeText;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<USlider> SlowdownDelaySlider;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> SlowdownDelayText;
+
 	/** Click to switch: Freeze / Slow. The text inside shows the current choice. */
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> StillModeButton;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> StillModeText;
@@ -44,6 +52,9 @@ private:
 	UFUNCTION() void HandleSensitivityChanged(float Value);
 	UFUNCTION() void HandleUIScaleChanged(float Value);
 	UFUNCTION() void HandleUIScaleReleased();
+	UFUNCTION() void HandleMasterVolumeChanged(float Value);
+	UFUNCTION() void HandleMusicVolumeChanged(float Value);
+	UFUNCTION() void HandleSlowdownDelayChanged(float Value);
 	UFUNCTION() void HandleStillMode();
 	UFUNCTION() void HandleMoveMode();
 	UFUNCTION() void HandleBack();

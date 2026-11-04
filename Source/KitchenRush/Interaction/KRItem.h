@@ -6,6 +6,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Interaction/KRInteractable.h"
+#include "Audio/KRAudioTypes.h" // [M4.3]
 #include "KRItem.generated.h"
 
 class UStaticMeshComponent;
@@ -57,6 +58,12 @@ public:
 	/** [M3.7] Is Hit "the floor"? A flat surface at the height of the player's feet. (Counters are 90 cm up.) */
 	bool IsFloorHit(const FHitResult& Hit) const;
 	UStaticMeshComponent* GetMesh() const;       // [M2]
+
+	/** [M4.3] Sound when a throw ends on something that doesn't take it (a counter, a wall, the floor). */
+	virtual EKRSound GetImpactSound() const { return EKRSound::Thud; }
+
+	/** [M4.3] Sound when you set it down with E. None by default (plates and bowls clink). */
+	virtual EKRSound GetSetDownSound() const { return EKRSound::None; }
 
 	// ---- IKRInteractable ----
 	virtual FText GetInteractPrompt(const AKRItem* HeldItem) const override;

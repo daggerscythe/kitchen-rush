@@ -1,6 +1,7 @@
 // KRShards.cpp
 
 #include "Hazards/KRShards.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Cooking/KRTuningData.h"
 #include "Player/KRHealthComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -124,6 +125,7 @@ void AKRShards::Tick(float DeltaSeconds)
 
 	if (bOnPile && !bPlayerOnPile)
 	{
+		UKRAudioSubsystem::PlayAt(this, EKRSound::ShardCrunch, GetActorLocation()); // [M4.3] crunch
 		if (UKRHealthComponent* Health = Player->FindComponentByClass<UKRHealthComponent>())
 		{
 			Health->ApplyDamage(T->ShardStepDamage);

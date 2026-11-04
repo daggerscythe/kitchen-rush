@@ -1,9 +1,11 @@
 // KRPan.cpp
 
 #include "Cooking/KRPan.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
+#include "Components/StaticMeshComponent.h" // [M4.3] (Mesh as a scene component for the sizzle)
 #include "Interaction/KRInteractionComponent.h"
 #include "Hazards/KRHazardZone.h"
 #include "Engine/World.h"
@@ -61,7 +63,7 @@ FText AKRPan::GetInteractPrompt(const AKRItem* HeldItem) const
 	}
 	if (!HeldItem)
 	{
-		return FText::Format(NSLOCTEXT("KitchenRush", "TakeFromPan", "Take {0}"), Steak->GetItemName());
+		return FText::Format(NSLOCTEXT("KitchenRush", "PickUpPanWith", "Pick up Pan with {0}"), Steak->GetItemName());
 	}
 	if (const AKRPlate* Plate = Cast<AKRPlate>(HeldItem))
 	{
@@ -100,8 +102,7 @@ bool AKRPan::Interact(UKRInteractionComponent* Interactor)
 	AKRFood* Taken = Steak;
 	if (!Held)
 	{
-		Steak = nullptr;
-		return Interactor->TryPickUp(Taken);
+		return Super::Interact(Interactor);
 	}
 	if (AKRPlate* Plate = Cast<AKRPlate>(Held))
 	{
@@ -118,9 +119,15 @@ void AKRPan::Cook(float WorldSeconds)
 {
 	if (Steak)
 	{
-		Steak->AddCookTime(WorldSeconds);
-		// A steak left GreaseFireDelay seconds past burnt catches fire.
 		const UKRTuningData* T = UKRTuningData::Get(this);
+		const float Before = Steak->GetCookSeconds(); // [M4.3]
+		Steak->AddCookTime(WorldSeconds);
+		// [M4.3] Ding: it just reached the perfect window.
+		if (Before < T->SteakCookedAt && Steak->GetCookSeconds() >= T->SteakCookedAt)
+		{
+			UKRAudioSubsystem::PlayAt(this, EKRSound::CookDone, GetActorLocation());
+		}
+		// A steak left GreaseFireDelay seconds past burnt catches fire.
 		if (Steak->GetCookSeconds() >= T->SteakBurntAt + T->GreaseFireDelay)
 		{
 			StartGreaseFire();
@@ -135,6 +142,7 @@ void AKRPan::StartGreaseFire()
 	// The steak is ash now.
 	Steak->Destroy();
 	Steak = nullptr;
+	UKRAudioSubsystem::PlayAt(this, EKRSound::FireFlare, GetActorLocation()); // [M4.3] whoomph
 
 	UClass* FireClass = GreaseFireClass ? GreaseFireClass.Get() : AKRHazardZone::StaticClass();
 	FActorSpawnParameters Params;
@@ -165,6 +173,12 @@ void AKRPan::UpdateMeter()
 	else if (Seconds >= T->SteakCookedAt)      Color = FLinearColor(0.3f, 0.85f, 0.4f);  // perfect: green
 
 	SetMeter(true, FMath::Clamp(Seconds / T->SteakBurntAt, 0.f, 1.f), Color, Steak->GetItemName());
+}
+
+// [M4.3] Sizzle while a steak is in the pan on a burner.
+void AKRPan::UpdateCookSound()
+{
+	UKRAudioSubsystem::UpdateLoop(this, CookLoop, EKRSound::Sizzle, Steak != nullptr && IsOnBurner(), Mesh);
 }
 
 void AKRPan::Destroyed()

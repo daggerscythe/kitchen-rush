@@ -36,6 +36,16 @@ public:
 	UPROPERTY()
 	float UIScale = 1.f;
 
+	/** [M4.3] 0..1. Old saves without these load as 1 (full volume). */
+	UPROPERTY()
+	float MasterVolume = 1.f;
+
+	UPROPERTY()
+	float MusicVolume = 1.f;
+
+	UPROPERTY()
+	float SlowdownDelay = 0.5f;
+
 	UPROPERTY()
 	EKRStillMode StillMode = EKRStillMode::Slow;
 

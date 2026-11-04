@@ -49,6 +49,8 @@ public:
 	virtual bool CanReceiveItem(const AKRItem* Item) const override;
 	virtual bool ReceiveThrownItem(AKRItem* Item) override;
 	virtual uint8 GetTrickShotFlag() const override { return KRTrick::Plate; } // [M3.7]
+	virtual EKRSound GetImpactSound() const override { return EKRSound::DishClink; }  // [M4.3]
+	virtual EKRSound GetSetDownSound() const override { return EKRSound::DishClink; } // [M4.3]
 
 	virtual void Tick(float DeltaSeconds) override; // [M3.5]
 

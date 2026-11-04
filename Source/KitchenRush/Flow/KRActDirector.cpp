@@ -1,6 +1,7 @@
 // KRActDirector.cpp
 
 #include "Flow/KRActDirector.h"
+#include "Audio/KRAudioSubsystem.h"
 #include "Flow/KRProfileSubsystem.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPan.h"
@@ -247,10 +248,8 @@ void AKRActDirector::StartAct(int32 Act)
 			BeginRush2();
 			return;
 		}
-		// "Heads up!": catch Gus's onion, then throw a steak into the pan. The clock waits for these.
-		Beat = EKRBeat::Act2_CatchOnion;
-		Note(NoteHeadsUp);
-		TossOnion();
+		Beat = EKRBeat::Act2_ThrowSteak;
+		Note(NoteThrowSteak);
 		return;
 	}
 
@@ -269,16 +268,30 @@ void AKRActDirector::StartAct(int32 Act)
 	}
 	Beat = EKRBeat::Act3_Rush;
 	ShowActTitle(NSLOCTEXT("KitchenRush", "Act3Title", "ACT 3 · CLOSING TIME"));
-	for (AActor* Actor : UnlockInAct3)
-	{
-		SetLocked(Actor, false); // the pot opens
-	}
-	GameMode->AddToMenu(TomatoSoupRow);
+	OpenPot();
 	GameMode->SetMaxTickets(3);
 	if (G)
 	{
 		G->SetAutoToss(true);
 		G->SetAutoTrips(true);
+	}
+}
+
+void AKRActDirector::OpenPot()
+{
+	if (bPotOpen)
+	{
+		return;
+	}
+	bPotOpen = true;
+	for (AActor* Actor : UnlockInAct3)
+	{
+		SetLocked(Actor, false);
+	}
+	if (AKitchenRushGameMode* GameMode = GetGameMode())
+	{
+		GameMode->AddToMenu(TomatoSoupRow);
+		GameMode->AddOrder(TomatoSoupRow, 0.f); // straight away, whatever else is on the rail
 	}
 	Note(NotePotOpens);
 }
@@ -292,7 +305,7 @@ void AKRActDirector::BeginRush2()
 	if (GameMode)
 	{
 		GameMode->SetMenu({ TomatoSaladRow, GardenSaladRow, SteakOnionsRow });
-		GameMode->SetMaxTickets(2);
+		GameMode->SetMaxTickets(3);
 		GameMode->SetOrdersEnabled(true);
 	}
 	if (AKRGusDirector* G = Gus.Get())
@@ -309,10 +322,10 @@ void AKRActDirector::TossOnion()
 	if (!OnionClass)
 	{
 		// No Gus or no onion set up: skip the catch lesson rather than get stuck.
-		Beat = EKRBeat::Act2_ThrowSteak;
-		Note(NoteThrowSteak);
+		BeginRush2();
 		return;
 	}
+	UKRAudioSubsystem::PlayAt(this, EKRSound::GusHeadsUp, G->GetActorLocation()); // [M4.3]
 	TutorialOnion = G->LaunchItem(OnionClass, EKRGusAim::InFrontOfPlayer);
 	OnionGoneSeconds = 0.f;
 }
@@ -374,6 +387,7 @@ void AKRActDirector::DropShelfBoards()
 	{
 		return;
 	}
+	bool bPlayedCrash = false; // [M4.3] one crash for the whole shelf
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
 	{
 		if (!It->ActorHasTag(ShelfBoardTag))
@@ -383,6 +397,11 @@ void AKRActDirector::DropShelfBoards()
 		UPrimitiveComponent* Body = Cast<UPrimitiveComponent>(It->GetRootComponent());
 		if (Body && Body->Mobility == EComponentMobility::Movable)
 		{
+			if (!bPlayedCrash)
+			{
+				bPlayedCrash = true;
+				UKRAudioSubsystem::PlayAt(this, EKRSound::ShelfCrash, It->GetActorLocation());
+			}
 			Body->SetSimulatePhysics(true);
 			Body->AddImpulse(FVector(0.f, 0.f, -50.f), NAME_None, true);
 		}
@@ -458,6 +477,29 @@ void AKRActDirector::UpdateAct2(float DeltaSeconds)
 {
 	if (Beat == EKRBeat::Act2_CatchOnion)
 	{
+		if (OnionDelayLeft > 0.f)
+		{
+			OnionDelayLeft -= DeltaSeconds;
+			if (OnionDelayLeft <= 0.f)
+			{
+				Note(NoteHeadsUp);
+				TossOnion();
+			}
+			return;
+		}
+		// Caught it, or picked it up after it landed: either way the player has it now.
+		if (const AKRItem* Held = TutorialOnion.Get())
+		{
+			if (Held->IsHeld() || Held->IsStored())
+			{
+				BeginRush2();
+				if (AKitchenRushGameMode* GameMode = GetGameMode())
+				{
+					GameMode->AddOrder(SteakOnionsRow, 0.f);
+				}
+				return;
+			}
+		}
 		// Missed it? Once it's lying somewhere (or got binned), Gus throws another.
 		const AKRItem* Onion = TutorialOnion.Get();
 		const bool bLanded = !Onion || (!Onion->IsInFlight() && !Onion->IsHeld() && !Onion->IsStored());
@@ -475,6 +517,11 @@ void AKRActDirector::UpdateAct2(float DeltaSeconds)
 	if (Beat != EKRBeat::Act2_Rush)
 	{
 		return;
+	}
+
+	if (!bPotOpen && ShiftSeconds >= HoursToShiftSeconds(PotHour))
+	{
+		OpenPot();
 	}
 
 	if (!bTrip1Done && ShiftSeconds >= HoursToShiftSeconds(FirstTripHour))
@@ -529,6 +576,7 @@ void AKRActDirector::UpdateAct3()
 		AKRGusDirector* G = Gus.Get();
 		if (G && G->HasEvent(ShelfEvent) && G->PlayEvent(ShelfEvent))
 		{
+			UKRAudioSubsystem::PlayAt(this, EKRSound::ShelfCreak, G->GetWarningLocation()); // [M4.3] the shelf groans
 			G->ResetTripTimer();
 			Note(NoteShelf);
 		}
@@ -610,23 +658,11 @@ void AKRActDirector::HandleEvent(const FKRGameEvent& Event)
 		}
 		break;
 
-	case EKRGameEvent::Catch:
-		if (Beat == EKRBeat::Act2_CatchOnion)
-		{
-			Beat = EKRBeat::Act2_ThrowSteak;
-			Note(NoteThrowSteak);
-		}
-		break;
-
 	case EKRGameEvent::TrickShot:
 		if (Beat == EKRBeat::Act2_ThrowSteak && (Event.Flags & KRTrick::Pan) != 0)
 		{
-			BeginRush2();
-			// [M4.1] The lesson just gave you an onion and a steak in the pan: the first ticket uses them.
-			if (GameMode)
-			{
-				GameMode->AddOrder(SteakOnionsRow, 0.f);
-			}
+			Beat = EKRBeat::Act2_CatchOnion;
+			OnionDelayLeft = OnionTossDelay; // UpdateAct2 tosses the onion when this runs out
 		}
 		break;
 

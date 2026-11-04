@@ -1,6 +1,7 @@
 // KRTrash.cpp
 
 #include "Cooking/KRTrash.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Interaction/KRInteractionComponent.h"
@@ -41,6 +42,7 @@ bool AKRTrash::IsBinnable(const AKRItem* Item)
 // [M3.5]
 void AKRTrash::PopLidOpen()
 {
+	UKRAudioSubsystem::PlayAt(this, EKRSound::TrashDump, GetActorLocation()); // [M4.3] (only called when something goes in)
 	KeepOpenUntil = FPlatformTime::Seconds() + 0.8;
 }
 

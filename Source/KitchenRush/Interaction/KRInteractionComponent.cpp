@@ -1,6 +1,7 @@
 // KRInteractionComponent.cpp
 
 #include "Interaction/KRInteractionComponent.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Interaction/KRInteractable.h"
 #include "Interaction/KRItem.h"
 #include "Time/KRTimeSubsystem.h"
@@ -153,4 +154,5 @@ void UKRInteractionComponent::PlaceHeldItem()
 
 	const float Yaw = GetOwner()->GetActorRotation().Yaw;
 	Item->OnPlaced(PlaceLocation + FVector(0.f, 0.f, 1.f), FRotator(0.f, Yaw, 0.f));
+	UKRAudioSubsystem::PlayAt(this, Item->GetSetDownSound(), PlaceLocation); // [M4.3] plates clink
 }

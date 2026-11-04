@@ -22,6 +22,7 @@ protected:
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> RestartActButton;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> MainMenuButton;
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> QuitButton;
+	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UButton> NotesButton;
 
 private:
 	UFUNCTION() void HandleResume();
@@ -29,4 +30,5 @@ private:
 	UFUNCTION() void HandleRestartAct();
 	UFUNCTION() void HandleMainMenu();
 	UFUNCTION() void HandleQuit();
+	UFUNCTION() void HandleNotes();
 };

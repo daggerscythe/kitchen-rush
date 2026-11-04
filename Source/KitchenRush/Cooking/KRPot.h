@@ -33,10 +33,12 @@ public:
 	virtual bool CanReceiveItem(const AKRItem* Item) const override;
 	virtual bool ReceiveThrownItem(AKRItem* Item) override;
 	virtual uint8 GetTrickShotFlag() const override { return KRTrick::Pot; } // [M3.7]
+	virtual EKRSound GetImpactSound() const override { return EKRSound::PotClang; } // [M4.3]
 
 protected:
 	virtual void Cook(float WorldSeconds) override;
 	virtual void UpdateMeter() override;
+	virtual void UpdateCookSound() override; // [M4.3]
 
 	/** The soup surface that rises as tomatoes go in. Pick SM_SoupPot_Surface in BP_Pot. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pot")

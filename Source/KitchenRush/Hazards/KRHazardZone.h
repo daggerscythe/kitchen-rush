@@ -8,6 +8,7 @@
 #include "KRHazardZone.generated.h"
 
 class UStaticMeshComponent;
+class UAudioComponent; // [M4.3]
 
 UCLASS()
 class KITCHENRUSH_API AKRHazardZone : public AActor
@@ -46,5 +47,9 @@ private:
 	float Radius = 100.f;
 	bool bBlocksBurner = false;
 	float Age = 0.f;
+
+	/** [M4.3] The fire's crackle (grease fires only; spills are silent). Stops when the zone is destroyed. */
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> FireLoop;
 	FVector BaseScale = FVector::OneVector;
 };

@@ -1,6 +1,7 @@
 // KRGusDirector.cpp
 
 #include "Hazards/KRGusDirector.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Hazards/KRHazardProjectile.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRTuningData.h"
@@ -186,6 +187,13 @@ void AKRGusDirector::Tick(float DeltaSeconds)
 
 	const UKRTuningData* T = UKRTuningData::Get(this);
 
+	if (!QueuedTossRecipe.IsNone() && Pending == EPending::None)
+	{
+		const FName Recipe = QueuedTossRecipe;
+		QueuedTossRecipe = NAME_None;
+		TossIngredient(Recipe);
+	}
+
 	if (bAutoToss && T->TossInterval > 0.f) // [M4] separate switches
 	{
 		SecondsToToss -= DeltaSeconds;
@@ -225,7 +233,23 @@ static EKRFoodType FoodForPart(EKRDishPart Part)
 	}
 }
 
-void AKRGusDirector::TossIngredient()
+void AKRGusDirector::OnOrderAdded(FName RecipeRow)
+{
+	if (!bAutoToss || FMath::FRand() >= TossChancePerOrder)
+	{
+		return;
+	}
+	if (Pending == EPending::None)
+	{
+		TossIngredient(RecipeRow);
+	}
+	else
+	{
+		QueuedTossRecipe = RecipeRow; // busy with a trip: toss as soon as it's over
+	}
+}
+
+void AKRGusDirector::TossIngredient(FName ForRecipe)
 {
 	if (FoodClasses.Num() == 0)
 	{
@@ -239,6 +263,10 @@ void AKRGusDirector::TossIngredient()
 	{
 		for (const FKROrder& Order : GameMode->GetOrders())
 		{
+			if (!ForRecipe.IsNone() && Order.RecipeRow != ForRecipe)
+			{
+				continue; // only that ticket's ingredients
+			}
 			if (const FKRRecipeRow* Recipe = GameMode->FindRecipe(Order.RecipeRow))
 			{
 				for (EKRDishPart Part : Recipe->Parts)
@@ -258,6 +286,10 @@ void AKRGusDirector::TossIngredient()
 		{
 			Choices.Add(FoodClass);
 		}
+	}
+	if (Choices.Num() == 0 && !ForRecipe.IsNone())
+	{
+		return; // that ticket is gone (or needs nothing Gus has)
 	}
 	if (Choices.Num() == 0)
 	{
@@ -283,6 +315,7 @@ void AKRGusDirector::TossIngredient()
 	Pending = EPending::Toss;
 	PendingFood = Picked;
 	StartWarning(FText::GetEmpty(), UKRTuningData::Get(this)->TossWarningSeconds);
+	UKRAudioSubsystem::PlayAt(this, EKRSound::GusHeadsUp, GetActorLocation()); // [M4.3] "Heads up!"
 	Shout(FText::Format(NSLOCTEXT("KitchenRush", "GusToss", "Gus: Heads up, chef! {0} coming your way!"),
 		Picked->GetDefaultObject<AKRFood>()->DisplayName));
 }
@@ -298,6 +331,7 @@ bool AKRGusDirector::PlayEvent(FName EventName)
 	Pending = EPending::Event;
 	PendingEvent = EventName;
 	WarningLocation = FindOrigin(Event->OriginTag); // [M4] the HUD arrow points here
+	UKRAudioSubsystem::PlayAt(this, EKRSound::GusWatchOut, GetActorLocation()); // [M4.3] "Watch out!" (from Gus, even for the shelf)
 	StartWarning(Event->Shout, Event->WarningSeconds > 0.f ? Event->WarningSeconds : UKRTuningData::Get(this)->TripWarningSeconds);
 	return true;
 }

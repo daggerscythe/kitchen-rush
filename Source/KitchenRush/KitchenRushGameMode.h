@@ -22,6 +22,7 @@ struct FKRPlateScore
 };
 class UDataTable;
 class UKRTuningData;
+class UKRAudioData; // [M4.3]
 
 /**
  *  Simple GameMode for a first person game
@@ -38,6 +39,9 @@ public:
 
 	/** DA_Tuning, or nullptr if not set (use UKRTuningData::Get instead of calling this directly). */
 	const UKRTuningData* GetTuning() const;
+
+	/** [M4.3] DA_Audio, or nullptr if not set (use UKRAudioData::Get instead of calling this directly). */
+	const UKRAudioData* GetAudio() const;
 
 	/** Look up a recipe by its row name in DT_Recipes. */
 	const FKRRecipeRow* FindRecipe(FName RowName) const;
@@ -112,6 +116,10 @@ protected:
 	/** Set to DA_Tuning in BP_FirstPersonGameMode. */
 	UPROPERTY(EditDefaultsOnly, Category = "Kitchen Rush")
 	TObjectPtr<UKRTuningData> Tuning;
+
+	/** [M4.3] Set to DA_Audio in BP_FirstPersonGameMode. Empty = no sound. */
+	UPROPERTY(EditDefaultsOnly, Category = "Kitchen Rush")
+	TObjectPtr<UKRAudioData> Audio;
 
 	/** Set to DT_Recipes in BP_FirstPersonGameMode. */
 	UPROPERTY(EditDefaultsOnly, Category = "Kitchen Rush")

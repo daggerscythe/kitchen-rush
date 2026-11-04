@@ -85,7 +85,11 @@ void UKRTimeSubsystem::Tick(float DeltaTime)
 	const float RealDt = FMath::Min(static_cast<float>(FApp::GetDeltaTime()), 0.1f);
 
 	// 1) Is the player moving? Velocity is in cm/s. Size2D ignores up/down
-	const bool bMoving = Pawn->GetVelocity().Size2D() > S->MovingSpeedThreshold;
+	const bool bMovingNow = Pawn->GetVelocity().Size2D() > S->MovingSpeedThreshold;
+	StillSeconds = bMovingNow ? 0.f : StillSeconds + RealDt;
+	// Time keeps running for StillDelaySeconds after you stop, then starts to slow.
+	const bool bMoving = bMovingNow || StillSeconds < S->StillDelaySeconds;
+	bWalkingTime = bMoving;
 	MovingSeconds = bMoving ? MovingSeconds + RealDt : 0.f;
 	BurstSecondsLeft = FMath::Max(0.f, BurstSecondsLeft - RealDt);
 

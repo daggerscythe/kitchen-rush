@@ -32,7 +32,7 @@ public:
 	/** Constructor */
 	AKitchenRushPlayerController();
 
-	// ---------------- [M4] Menus and screens ----------------
+	// ---------------- Menus and screens ----------------
 	// Every screen pauses the game and shows the mouse; closing the last one goes back to playing.
 
 	/** The main menu, over the frozen kitchen. */
@@ -54,6 +54,8 @@ public:
 
 	/** Note card buttons: "Got it" (bSkipTutorial false) or "Skip tutorial" (true). */
 	void CloseNote(bool bSkipTutorial);
+	void OpenNotes();
+	void CloseNotes();
 
 	/** The Results (won) or Game Over screen. */
 	void ShowResults(const FKRResults& Results);
@@ -144,9 +146,11 @@ private:
 	UPROPERTY() TObjectPtr<UKRSettingsWidget> Settings;
 	UPROPERTY() TObjectPtr<UKRResultsWidget> ResultsScreen;
 	UPROPERTY() TObjectPtr<UKRNoteCardWidget> NoteCard;
+	UPROPERTY() TObjectPtr<UKRNoteCardWidget> NotesBrowser;
 
 	/** Screens currently up, bottom to top. */
 	UPROPERTY() TArray<TObjectPtr<UUserWidget>> OpenScreens;
 
 	TArray<FQueuedNote> NoteQueue;
+	TArray<FText> SeenNotes;
 };

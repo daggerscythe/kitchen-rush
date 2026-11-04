@@ -41,6 +41,16 @@ public:
 	float GetUIScale() const;
 	void SetUIScale(float Value);
 
+	/** [M4.3] 0..1. The audio subsystem reads these every frame, so changes are heard straight away. */
+	float GetMasterVolume() const;
+	void SetMasterVolume(float Value);
+
+	float GetMusicVolume() const;
+	void SetMusicVolume(float Value);
+
+	float GetSlowdownDelay() const;
+	void SetSlowdownDelay(float Value);
+
 	EKRStillMode GetStillMode() const;
 	void SetStillMode(EKRStillMode Mode, UWorld* World);
 

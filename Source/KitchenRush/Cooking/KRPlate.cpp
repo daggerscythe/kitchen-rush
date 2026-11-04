@@ -1,6 +1,7 @@
 // KRPlate.cpp
 
 #include "Cooking/KRPlate.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Cooking/KRFood.h"
 #include "Cooking/KRTuningData.h"
 #include "Interaction/KRInteractionComponent.h"
@@ -42,6 +43,7 @@ bool AKRPlate::AddFood(AKRFood* Food)
 
 	Food->OnStored(Mesh, Offset);
 	Foods.Add(Food);
+	UKRAudioSubsystem::PlayAt(this, EKRSound::DishClink, GetActorLocation()); // [M4.3]
 	return true;
 }
 
@@ -56,6 +58,7 @@ void AKRPlate::AddSoup(bool bPerfect, const FKRPlatedPart& Tally)
 	bSoupPerfect = bPerfect;
 	SoupTally = Tally; // [M3.7]
 	SoupFill->SetVisibility(true);
+	UKRAudioSubsystem::PlayAt(this, EKRSound::DishClink, GetActorLocation()); // [M4.3]
 }
 
 void AKRPlate::ClearContents()
@@ -99,6 +102,7 @@ void AKRPlate::OnPhysicsHit(AActor* OtherActor, const FHitResult& Hit)
 // [M3.5]
 void AKRPlate::Shatter(const FVector& Where)
 {
+	UKRAudioSubsystem::PlayAt(this, EKRSound::Shatter, Where); // [M4.3] CRASH
 	// Food falls on the floor (the 5-second rule applies); soup is lost.
 	for (int32 i = 0; i < Foods.Num(); ++i)
 	{

@@ -101,6 +101,8 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Recipes") FName PlainSteakRow = TEXT("PlainSteak");
 
 	// ---------------- Timeline (in-game hours: 18.25 = 6:15 PM) ----------------
+	/** The pot unlocks and a Tomato Soup ticket comes in straight away. */
+	UPROPERTY(EditAnywhere, Category = "Timeline") float PotHour = 17.5f;
 	UPROPERTY(EditAnywhere, Category = "Timeline") float FirstTripHour = 18.25f;
 	UPROPERTY(EditAnywhere, Category = "Timeline") float SecondTripHour = 19.f;
 	UPROPERTY(EditAnywhere, Category = "Timeline") float Act3Hour = 19.5f;
@@ -117,6 +119,9 @@ protected:
 
 	/** World seconds of patience on the tutorial steak (the first patience bar the player sees). */
 	UPROPERTY(EditAnywhere, Category = "Timeline") float TutorialSteakPatience = 120.f;
+
+	/** World seconds after the steak lands in the pan before Gus tosses the onion. */
+	UPROPERTY(EditAnywhere, Category = "Timeline") float OnionTossDelay = 1.f;
 
 	/** Chain reaction: the pot is pushed to boil over this many world seconds after Gus trips. */
 	UPROPERTY(EditAnywhere, Category = "Timeline") float ChainReactionBoilSeconds = 6.f;
@@ -163,6 +168,7 @@ private:
 	/** Play Gus's trip; FreezeNote (if not empty) appears as an auto-freeze just after the launch. */
 	void PlayScriptedTrip(const FText& FreezeNote);
 	void TossOnion();
+	void OpenPot();
 	void SetLocked(AActor* Actor, bool bLocked);
 	void DropShelfBoards();
 	void ShowActTitle(const FText& Title);
@@ -186,12 +192,14 @@ private:
 	FVector StepStart = FVector::ZeroVector;
 	TWeakObjectPtr<AKRItem> TutorialOnion;
 	float OnionGoneSeconds = 0.f;
+	float OnionDelayLeft = -1.f; // counting down to the onion toss
 
 	bool bShownBurnt = false;
 	bool bTrip1Done = false;
 	bool bTrip2Done = false;
 	bool bChainDone = false;
 	bool bShelfDone = false;
+	bool bPotOpen = false;
 	bool bSpecialDone = false;
 
 	// Auto-freeze: after Gus launches AwaitedEvent, wait FreezeCountdown world seconds, then show FreezeNote.

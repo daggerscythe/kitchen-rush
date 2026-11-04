@@ -3,7 +3,10 @@
 #include "KitchenRushGameMode.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
+#include "Audio/KRAudioData.h"      // [M4.3]
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Engine/DataTable.h"
+#include "Hazards/KRGusDirector.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Flow/KRProfileSubsystem.h"
@@ -35,6 +38,12 @@ void AKitchenRushGameMode::BeginPlay()
 const UKRTuningData* AKitchenRushGameMode::GetTuning() const
 {
 	return Tuning;
+}
+
+// [M4.3]
+const UKRAudioData* AKitchenRushGameMode::GetAudio() const
+{
+	return Audio;
 }
 
 const FKRRecipeRow* AKitchenRushGameMode::FindRecipe(FName RowName) const
@@ -139,6 +148,11 @@ void AKitchenRushGameMode::AddOrder(FName RecipeRow, float Patience)
 	}
 	Order.PatienceLeft = Order.PatienceTotal;
 	Orders.Add(Order);
+	if (AKRGusDirector* GusDirector = AKRGusDirector::Find(GetWorld()))
+	{
+		GusDirector->OnOrderAdded(RecipeRow);
+	}
+	UKRAudioSubsystem::PlayAtPass(this, EKRSound::NewOrder); // [M4.3] ding ding
 }
 
 // [M4]
@@ -413,6 +427,7 @@ bool AKitchenRushGameMode::ServeDish(AKRPlate* Plate, bool bThrownIntoPass)
 	{
 		Receipts.RemoveAt(0); // the HUD only needs the recent ones
 	}
+	UKRAudioSubsystem::Play2D(this, EKRSound::Served); // [M4.3] ka-ching
 	BroadcastEvent(EKRGameEvent::DishServed, Order.RecipeRow, Best.Correctness); // [M4]
 	return true;
 }

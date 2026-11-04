@@ -78,6 +78,10 @@ public:
 	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0.01"))
 	float ActionRampSeconds = 0.08f;
 
+	/** Real seconds you have to stand still before time starts to slow down. */
+	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0"))
+	float StillDelaySeconds = 1.0f;
+
 	/** Chopping, picking up, placing, etc. run time at walk speed for this many real seconds */
 	UPROPERTY(Config, EditAnywhere, Category = "Feel", meta = (ClampMin = "0"))
 	float ActionBurstSeconds = 0.3f;

@@ -6,6 +6,7 @@
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "KitchenRushGameMode.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 
 UKRHealthComponent::UKRHealthComponent()
 {
@@ -45,6 +46,7 @@ void UKRHealthComponent::ApplyDamage(float Amount)
 	}
 	Health = FMath::Max(0.f, Health - Amount);
 	WorldSecondsSinceDamage = 0.f;
+	UKRAudioSubsystem::PlayHurt(this); // [M4.3] (limited to one grunt every so often)
 	LastDamageRealTime = GetWorld()->GetRealTimeSeconds();
 
 	if (Health <= 0.f && GameMode)

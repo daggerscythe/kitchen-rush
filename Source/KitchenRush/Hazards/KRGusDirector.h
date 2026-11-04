@@ -93,7 +93,10 @@ public:
 	/** Gus tosses one ingredient that an open ticket needs (or any ingredient if there are no tickets).
 	 *  [M3.5] Warns first; the ingredient flies TossWarningSeconds later. */
 	UFUNCTION(BlueprintCallable, Category = "Gus")
-	void TossIngredient();
+	void TossIngredient(FName ForRecipe = NAME_None);
+
+	/** A new ticket came in: maybe toss one of its ingredients (Toss Chance Per Order). */
+	void OnOrderAdded(FName RecipeRow);
 
 	/** Run the event called EventName from the Events list. False if there isn't one.
 	 *  [M3.5] Warns first; the launches start after the event's warning time. Replaces a pending toss. */
@@ -165,6 +168,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Gus")
 	bool bAutoEvents = true;
 
+	/** Chance (0 to 1) that Gus tosses an ingredient for each new ticket. */
+	UPROPERTY(EditAnywhere, Category = "Gus", meta = (ClampMin = "0", ClampMax = "1"))
+	float TossChancePerOrder = 0.5f;
+
 	/** Launches start up to this far (cm) from Gus, so a burst doesn't start inside itself. */
 	UPROPERTY(EditAnywhere, Category = "Gus|Aim")
 	float SpawnSpread = 25.f;
@@ -198,6 +205,7 @@ private:
 	float SecondsToToss = 0.f;
 	float SecondsToTrip = 0.f;
 	bool bWarnedEmptyClass = false;
+	FName QueuedTossRecipe; // a ticket Gus will toss for once he's free
 
 	// [M4]
 	bool bAutoToss = true;

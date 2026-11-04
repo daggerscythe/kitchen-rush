@@ -46,6 +46,9 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Time")
 	float GetWorldSecondsElapsed() const { return WorldSeconds; }
 
+	/** True while time runs because you're walking (or stood still for less than Still Delay Seconds). */
+	bool IsWalkingTime() const { return bWalkingTime; }
+
 	EKRStillMode GetStillMode() const { return StillMode; }
 	EKRMoveMode GetMoveMode() const { return MoveMode; }
 
@@ -65,4 +68,6 @@ private:
 	float MovingSeconds = 0.f;     // real seconds of nonstop walking (for Momentum mode)
 	float BurstSecondsLeft = 0.f;  // real seconds left in the current action burst
 	float WorldSeconds = 0.f;      // world time that has passed
+	float StillSeconds = 999.f;    // real seconds since the player last moved
+	bool bWalkingTime = false;
 };

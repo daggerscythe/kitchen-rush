@@ -12,6 +12,7 @@ void UKRPauseMenuWidget::NativeConstruct()
 	RestartActButton->OnClicked.AddUniqueDynamic(this, &UKRPauseMenuWidget::HandleRestartAct);
 	MainMenuButton->OnClicked.AddUniqueDynamic(this, &UKRPauseMenuWidget::HandleMainMenu);
 	QuitButton->OnClicked.AddUniqueDynamic(this, &UKRPauseMenuWidget::HandleQuit);
+	if (NotesButton) { NotesButton->OnClicked.AddUniqueDynamic(this, &UKRPauseMenuWidget::HandleNotes); }
 }
 
 void UKRPauseMenuWidget::HandleResume()
@@ -51,5 +52,13 @@ void UKRPauseMenuWidget::HandleQuit()
 	if (AKitchenRushPlayerController* PC = Cast<AKitchenRushPlayerController>(GetOwningPlayer()))
 	{
 		PC->QuitToDesktop();
+	}
+}
+
+void UKRPauseMenuWidget::HandleNotes()
+{
+	if (AKitchenRushPlayerController* PC = Cast<AKitchenRushPlayerController>(GetOwningPlayer()))
+	{
+		PC->OpenNotes();
 	}
 }

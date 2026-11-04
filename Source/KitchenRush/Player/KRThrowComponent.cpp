@@ -5,6 +5,7 @@
 #include "Interaction/KRItem.h"
 #include "Cooking/KRTuningData.h"
 #include "Time/KRTimeSubsystem.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 #include "Camera/CameraComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/World.h"
@@ -51,6 +52,7 @@ void UKRThrowComponent::ReleaseThrow()
 	const FVector Velocity = GetThrowVelocity();
 	Interaction->ReleaseHeldItem();
 	Item->OnThrown(Start, Velocity, false);
+	UKRAudioSubsystem::Play2D(this, EKRSound::Throw); // [M4.3] whoosh
 
 	if (UKRTimeSubsystem* Time = GetWorld()->GetSubsystem<UKRTimeSubsystem>())
 	{
@@ -83,7 +85,7 @@ void UKRThrowComponent::UpdateArc()
 	AKRItem* Item = Interaction->GetHeldItem();
 
 	// Ask the engine to simulate the flight and report the points along the way.
-	FPredictProjectilePathParams Params(5.f, Item->GetActorLocation(), GetThrowVelocity(), ArcSeconds);
+	FPredictProjectilePathParams Params(0.f, Item->GetActorLocation(), GetThrowVelocity(), ArcSeconds);
 	Params.bTraceWithCollision = true;
 	Params.TraceChannel = ECC_Visibility;
 	Params.SimFrequency = DotsPerSecond;

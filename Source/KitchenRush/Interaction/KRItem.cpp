@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "KitchenRushGameMode.h" // [M4] game events
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 
 AKRItem::AKRItem()
 {
@@ -32,6 +33,7 @@ void AKRItem::BeginPlay()
 	Super::BeginPlay();
 	// AddDynamic hooks our function to the mesh's hit event. The function must be a UFUNCTION.
 	Mesh->OnComponentHit.AddDynamic(this, &AKRItem::OnMeshHit);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
 }
 
 UStaticMeshComponent* AKRItem::GetMesh() const
@@ -83,11 +85,8 @@ void AKRItem::OnThrown(const FVector& StartLocation, const FVector& Velocity, bo
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	SetActorLocation(StartLocation, false, nullptr, ETeleportType::TeleportPhysics);
 	SetActorEnableCollision(true);
-	if (!bFromGus)
-	{
-		// Your own throw starts right in front of you: don't let it hit your own body.
-		Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-	}
+	// Gus's throws can hit you; your own throws (and anything lying around) pass through you.
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, bFromGus ? ECR_Block : ECR_Ignore);
 	Mesh->SetSimulatePhysics(true);
 
 	// Physics runs on world time, so when you're frozen the item hangs in the air: Superhot style.
@@ -101,7 +100,7 @@ void AKRItem::OnThrown(const FVector& StartLocation, const FVector& Velocity, bo
 void AKRItem::EndFlight()
 {
 	bInFlight = false;
-	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block); // PhysicsActor's normal setting
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore); // PhysicsActor's normal setting
 }
 
 // [M3]
@@ -219,6 +218,7 @@ void AKRItem::HandleFlightHit(AActor* OtherActor, const FHitResult& Hit)
 	{
 		return; // landed in a pan / pot / on a plate. Don't touch "this" after this point.
 	}
+	UKRAudioSubsystem::PlayAt(this, GetImpactSound(), Hit.ImpactPoint); // [M4.3] thud / clang
 	if (IKRInteractable* Target = Cast<IKRInteractable>(OtherActor))
 	{
 		Target->OnHitByThrownItem(this); // e.g. knock the pot off the burner

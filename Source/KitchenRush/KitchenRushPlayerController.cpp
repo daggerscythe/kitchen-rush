@@ -21,6 +21,7 @@
 #include "UI/KRSettingsWidget.h"
 #include "UI/KRResultsWidget.h"
 #include "UI/KRNoteCardWidget.h"
+#include "Audio/KRAudioSubsystem.h" // [M4.3]
 
 AKitchenRushPlayerController::AKitchenRushPlayerController()
 {
@@ -101,7 +102,7 @@ void AKitchenRushPlayerController::SetupInputComponent()
 }
 
 // ============================================================================
-// [M4] Screens
+// Screens
 // ============================================================================
 
 void AKitchenRushPlayerController::OpenScreen(UUserWidget* Screen, int32 ZOrder)
@@ -115,6 +116,12 @@ void AKitchenRushPlayerController::OpenScreen(UUserWidget* Screen, int32 ZOrder)
 		Screen->AddToPlayerScreen(ZOrder);
 	}
 	OpenScreens.AddUnique(Screen);
+
+	// Every button on the screen clicks.
+	if (UKRAudioSubsystem* Audio = UKRAudioSubsystem::Get(this))
+	{
+		Audio->AddClickSounds(Screen);
+	}
 
 	SetPause(true);
 	bShowMouseCursor = true;
@@ -202,6 +209,11 @@ void AKitchenRushPlayerController::OnPausePressed()
 
 void AKitchenRushPlayerController::TogglePause()
 {
+	if (NotesBrowser && OpenScreens.Contains(NotesBrowser))
+	{
+		CloseNotes(); // Esc from Notes goes back to the pause menu
+		return;
+	}
 	if (PauseMenu && OpenScreens.Contains(PauseMenu))
 	{
 		if (Settings && OpenScreens.Contains(Settings))
@@ -264,7 +276,12 @@ void AKitchenRushPlayerController::ShowNextNote()
 		NoteCard = CreateWidget<UKRNoteCardWidget>(this, NoteCardClass);
 	}
 	NoteCard->Setup(Next.Title, Next.Body);
+	if (!SeenNotes.ContainsByPredicate([&Next](const FText& Seen) { return Seen.EqualTo(Next.Body); }))
+	{
+		SeenNotes.Add(Next.Body);
+	}
 	OpenScreen(NoteCard, 25);
+	UKRAudioSubsystem::Play2D(this, EKRSound::NoteRustle, true); // [M4.3] UI sound: the game is paused now
 }
 
 void AKitchenRushPlayerController::CloseNote(bool bSkipTutorial)
@@ -272,6 +289,10 @@ void AKitchenRushPlayerController::CloseNote(bool bSkipTutorial)
 	if (bSkipTutorial)
 	{
 		NoteQueue.Empty(); // every waiting note goes too
+	}
+	if (NoteQueue.Num() == 0)
+	{
+		UKRAudioSubsystem::Play2D(this, EKRSound::NoteRustle, true); // [M4.3] (the next note, if any, rustles on its own)
 	}
 	CloseScreen(NoteCard);
 	if (bSkipTutorial)
@@ -285,6 +306,19 @@ void AKitchenRushPlayerController::CloseNote(bool bSkipTutorial)
 	{
 		ShowNextNote();
 	}
+}
+
+void AKitchenRushPlayerController::OpenNotes()
+{
+	if (!NoteCardClass) { return; }
+	if (!NotesBrowser) { NotesBrowser = CreateWidget<UKRNoteCardWidget>(this, NoteCardClass); }
+	NotesBrowser->SetupBrowser(NSLOCTEXT("KitchenRush", "NotesTitle", "Nana's Notes"), SeenNotes);
+	OpenScreen(NotesBrowser, 40);
+}
+
+void AKitchenRushPlayerController::CloseNotes()
+{
+	CloseScreen(NotesBrowser);
 }
 
 void AKitchenRushPlayerController::ShowResults(const FKRResults& Results)
@@ -306,6 +340,10 @@ void AKitchenRushPlayerController::ShowResults(const FKRResults& Results)
 		ResultsScreen = CreateWidget<UKRResultsWidget>(this, ResultsClass);
 	}
 	ResultsScreen->Setup(Results);
+	if (UKRAudioSubsystem* Audio = UKRAudioSubsystem::Get(this))
+	{
+		Audio->PlayResultsJingle(Results.bWon); // [M4.3]
+	}
 	if (HUDWidget)
 	{
 		HUDWidget->SetVisibility(ESlateVisibility::Collapsed);
