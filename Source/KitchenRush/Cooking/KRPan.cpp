@@ -1,11 +1,11 @@
 // KRPan.cpp
 
 #include "Cooking/KRPan.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
-#include "Components/StaticMeshComponent.h" // [M4.3] (Mesh as a scene component for the sizzle)
+#include "Components/StaticMeshComponent.h" // (Mesh as a scene component for the sizzle)
 #include "Interaction/KRInteractionComponent.h"
 #include "Hazards/KRHazardZone.h"
 #include "Engine/World.h"
@@ -63,7 +63,9 @@ FText AKRPan::GetInteractPrompt(const AKRItem* HeldItem) const
 	}
 	if (!HeldItem)
 	{
-		return FText::Format(NSLOCTEXT("KitchenRush", "PickUpPanWith", "Pick up Pan with {0}"), Steak->GetItemName());
+		return bAimingAtSteak
+			? FText::Format(NSLOCTEXT("KitchenRush", "TakeFromPan", "Take {0}"), Steak->GetItemName())
+			: FText::Format(NSLOCTEXT("KitchenRush", "PickUpPanWith", "Pick up Pan with {0}"), Steak->GetItemName());
 	}
 	if (const AKRPlate* Plate = Cast<AKRPlate>(HeldItem))
 	{
@@ -102,7 +104,12 @@ bool AKRPan::Interact(UKRInteractionComponent* Interactor)
 	AKRFood* Taken = Steak;
 	if (!Held)
 	{
-		return Super::Interact(Interactor);
+		if (bAimingAtSteak)
+		{
+			Steak = nullptr;
+			return Interactor->TryPickUp(Taken); // just the steak
+		}
+		return Super::Interact(Interactor); // the pan, with the steak in it
 	}
 	if (AKRPlate* Plate = Cast<AKRPlate>(Held))
 	{
@@ -115,6 +122,12 @@ bool AKRPan::Interact(UKRInteractionComponent* Interactor)
 	return false;
 }
 
+void AKRPan::UpdateAim(const FVector& Point)
+{
+	// The steak's outline seen from above (plus 2 cm); a point inside it is "on the steak".
+	bAimingAtSteak = Steak && Steak->GetComponentsBoundingBox(true).ExpandBy(2.f).IsInsideXY(Point);
+}
+
 void AKRPan::Cook(float WorldSeconds)
 {
 	if (Steak)
@@ -122,7 +135,7 @@ void AKRPan::Cook(float WorldSeconds)
 		const UKRTuningData* T = UKRTuningData::Get(this);
 		const float Before = Steak->GetCookSeconds(); // [M4.3]
 		Steak->AddCookTime(WorldSeconds);
-		// [M4.3] Ding: it just reached the perfect window.
+		// Ding: it just reached the perfect window.
 		if (Before < T->SteakCookedAt && Steak->GetCookSeconds() >= T->SteakCookedAt)
 		{
 			UKRAudioSubsystem::PlayAt(this, EKRSound::CookDone, GetActorLocation());
@@ -175,7 +188,7 @@ void AKRPan::UpdateMeter()
 	SetMeter(true, FMath::Clamp(Seconds / T->SteakBurntAt, 0.f, 1.f), Color, Steak->GetItemName());
 }
 
-// [M4.3] Sizzle while a steak is in the pan on a burner.
+// Sizzle while a steak is in the pan on a burner.
 void AKRPan::UpdateCookSound()
 {
 	UKRAudioSubsystem::UpdateLoop(this, CookLoop, EKRSound::Sizzle, Steak != nullptr && IsOnBurner(), Mesh);

@@ -415,9 +415,9 @@ void UKRAudioSubsystem::TickTimeSounds(const UKRAudioData* Data, APawn* Pawn)
 		bNextIsTock = !bNextIsTock;
 	}
 
-	// Tape-stop when you stop walking, spin-up when you start: the same "moving" test the time rule uses.
-	// Action bursts (chop, throw) don't count, since you're standing still for those.
-	const bool bMoving = Time->IsWalkingTime();
+	// Time counts as "running" until it has really slowed (past halfway), so a quick pause makes no sound.
+	// Only walking starts it again: chopping and other actions don't.
+	const bool bMoving = Time->IsWalkingTime() || (bTimeRunning && Time->GetFreezeAmount() < 0.5f);
 	if (bMoving != bTimeRunning)
 	{
 		bTimeRunning = bMoving;

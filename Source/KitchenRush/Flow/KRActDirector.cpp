@@ -475,6 +475,20 @@ void AKRActDirector::UpdateAct1()
 
 void AKRActDirector::UpdateAct2(float DeltaSeconds)
 {
+	// A steak cooking in a pan, thrown in or placed by hand: start the countdown to the onion.
+	if (Beat == EKRBeat::Act2_ThrowSteak)
+	{
+		for (TActorIterator<AKRPan> It(GetWorld()); It; ++It)
+		{
+			if (It->IsCookingSteak())
+			{
+				Beat = EKRBeat::Act2_CatchOnion;
+				OnionDelayLeft = OnionTossDelay;
+				break;
+			}
+		}
+		return;
+	}
 	if (Beat == EKRBeat::Act2_CatchOnion)
 	{
 		if (OnionDelayLeft > 0.f)

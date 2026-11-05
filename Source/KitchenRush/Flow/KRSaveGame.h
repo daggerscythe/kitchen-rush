@@ -44,7 +44,7 @@ public:
 	float MusicVolume = 1.f;
 
 	UPROPERTY()
-	float SlowdownDelay = 0.5f;
+	float SlowdownDelay = 0.f;
 
 	UPROPERTY()
 	EKRStillMode StillMode = EKRStillMode::Slow;

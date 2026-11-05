@@ -50,7 +50,7 @@ void UKRSettingsWidget::NativeConstruct()
 		SlowdownDelaySlider->SetMinValue(0.f);
 		SlowdownDelaySlider->SetMaxValue(1.f);
 		SlowdownDelaySlider->SetStepSize(0.05f);
-		SlowdownDelaySlider->SetValue(Profile ? Profile->GetSlowdownDelay() : 0.5f);
+		SlowdownDelaySlider->SetValue(Profile ? Profile->GetSlowdownDelay() : 0.2f);
 		SlowdownDelaySlider->OnValueChanged.AddUniqueDynamic(this, &UKRSettingsWidget::HandleSlowdownDelayChanged);
 	}
 
