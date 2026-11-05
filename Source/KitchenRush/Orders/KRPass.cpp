@@ -17,19 +17,17 @@ AKRPass::AKRPass()
 	Box->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	Box->SetCollisionResponseToAllChannels(ECR_Ignore);
 	Box->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
-	Box->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap); // [M3.5] notice flying plates (items are PhysicsBody)
-	Box->SetGenerateOverlapEvents(true);                              // [M3.5]
+	Box->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap); // notice flying plates (items are PhysicsBody)
+	Box->SetGenerateOverlapEvents(true);
 	Box->ShapeColor = FColor::Green;
 }
 
-// [M3.5]
 void AKRPass::BeginPlay()
 {
 	Super::BeginPlay();
 	Box->OnComponentBeginOverlap.AddDynamic(this, &AKRPass::OnBoxOverlap);
 }
 
-// [M3.5]
 void AKRPass::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// Only a plate that's flying (you threw it) and has something on it.
@@ -39,7 +37,7 @@ void AKRPass::OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* Oth
 		return;
 	}
 	AKitchenRushGameMode* GameMode = GetWorld()->GetAuthGameMode<AKitchenRushGameMode>();
-	if (GameMode && GameMode->ServeDish(Plate, true)) // [M3.7] true = thrown in: one more trick shot
+	if (GameMode && GameMode->ServeDish(Plate, true)) // true = thrown in: one more trick shot
 	{
 		Plate->Destroy(); // served: it's gone through the window
 	}

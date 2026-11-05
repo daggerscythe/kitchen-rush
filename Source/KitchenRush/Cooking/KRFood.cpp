@@ -3,7 +3,7 @@
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
-#include "KitchenRushGameMode.h" // [M4] game events
+#include "KitchenRushGameMode.h" // game events
 #include "Interaction/KRInteractionComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -60,7 +60,7 @@ void AKRFood::UpdateCookLook()
 	else if (ShownCookStage == 3)
 	{
 		NewMaterial = BurntMaterial;
-		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::SteakBurnt); // [M4]
+		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::SteakBurnt);
 	}
 	if (NewMaterial)
 	{
@@ -72,7 +72,7 @@ void AKRFood::UpdateCookLook()
 FKRPlatedPart AKRFood::GetPlatedPart() const
 {
 	FKRPlatedPart Result;
-	// [M3.7] One ingredient: its trick shots, a Gus Assist if caught and never dropped, a ground touch if dropped.
+	// One ingredient: its trick shots, a Gus Assist if caught and never dropped, a ground touch if dropped.
 	Result.TrickShots = GetTrickShotCount();
 	Result.GusAssists = (WasCaughtFromGus() && !HasTouchedGround()) ? 1 : 0;
 	Result.GroundTouches = HasTouchedGround() ? 1 : 0;
@@ -114,7 +114,7 @@ FText AKRFood::GetItemName() const
 
 FText AKRFood::GetInteractPrompt(const AKRItem* HeldItem) const
 {
-	if (IsInFlight()) // [M3]
+	if (IsInFlight())
 	{
 		return GetCatchPrompt(HeldItem);
 	}
@@ -136,7 +136,7 @@ FText AKRFood::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRFood::Interact(UKRInteractionComponent* Interactor)
 {
-	if (IsInFlight()) // [M3]
+	if (IsInFlight())
 	{
 		return CatchBy(Interactor);
 	}

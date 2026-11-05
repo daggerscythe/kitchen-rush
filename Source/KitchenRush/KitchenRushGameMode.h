@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
 #include "Cooking/KRTypes.h"
-#include "Flow/KRFlowTypes.h" // [M4] game events, run outcomes, results
+#include "Flow/KRFlowTypes.h" // game events, run outcomes, results
 #include "KitchenRushGameMode.generated.h"
 
 class AKRPlate;
 
-/** [M3.7] Everything ScorePlate works out about a served plate (not a UStruct: C++ only). */
+/** Everything ScorePlate works out about a served plate (not a UStruct: C++ only). */
 struct FKRPlateScore
 {
 	float Correctness = 0.f;    // 0..1
@@ -22,7 +22,7 @@ struct FKRPlateScore
 };
 class UDataTable;
 class UKRTuningData;
-class UKRAudioData; // [M4.3]
+class UKRAudioData;
 
 /**
  *  Simple GameMode for a first person game
@@ -40,7 +40,7 @@ public:
 	/** DA_Tuning, or nullptr if not set (use UKRTuningData::Get instead of calling this directly). */
 	const UKRTuningData* GetTuning() const;
 
-	/** [M4.3] DA_Audio, or nullptr if not set (use UKRAudioData::Get instead of calling this directly). */
+	/** DA_Audio, or nullptr if not set (use UKRAudioData::Get instead of calling this directly). */
 	const UKRAudioData* GetAudio() const;
 
 	/** Look up a recipe by its row name in DT_Recipes. */
@@ -52,22 +52,22 @@ public:
 	bool IsGameOver() const { return bGameOver; }
 
 	/** Serve a plate/bowl to the best-matching open ticket. Returns false if there are no orders.
-	 *  [M3.7] bThrownIntoPass: it was thrown through the window (one more trick shot). Builds a receipt. */
+	 * bThrownIntoPass: it was thrown through the window (one more trick shot). Builds a receipt. */
 	bool ServeDish(AKRPlate* Plate, bool bThrownIntoPass = false);
 
-	/** [M3.7] Recent order receipts, oldest first. The HUD shows new ones line by line. */
+	/** Recent order receipts, oldest first. The HUD shows new ones line by line. */
 	const TArray<FKRReceipt>& GetReceipts() const { return Receipts; }
 
 	/** Show a short message on the HUD for a few seconds ("+$14  Garden Salad"). */
 	void ShowMessage(const FText& Text, float Seconds = 3.f);
 
-	/** [M3] Add tips outside of serving (dodging a knife) and show "+$1  Dodged!". */
+	/** Add tips outside of serving (dodging a knife) and show "+$1  Dodged!". */
 	void AddBonus(int32 Dollars, const FText& Reason);
 
-	/** [M3] End the night early: health hit 0 or 3 strikes. [M4] Shows the Game Over screen. */
+	/** End the night early: health hit 0 or 3 strikes. Shows the Game Over screen. */
 	void TriggerGameOver(const FText& Reason, EKRRunOutcome Outcome = EKRRunOutcome::Health);
 
-	// ---------------- [M4] Night flow (the act director drives these) ----------------
+	// ---------------- Night flow (the act director drives these) ----------------
 
 	/** Everyone who cares about "what just happened" (act director, playtest logger) binds to this. */
 	FKROnGameEvent OnGameEvent;
@@ -117,7 +117,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Kitchen Rush")
 	TObjectPtr<UKRTuningData> Tuning;
 
-	/** [M4.3] Set to DA_Audio in BP_FirstPersonGameMode. Empty = no sound. */
+	/** Set to DA_Audio in BP_FirstPersonGameMode. Empty = no sound. */
 	UPROPERTY(EditDefaultsOnly, Category = "Kitchen Rush")
 	TObjectPtr<UKRAudioData> Audio;
 
@@ -125,34 +125,33 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Kitchen Rush")
 	TObjectPtr<UDataTable> RecipeTable;
 
-	/** Random orders on/off. (Patience keeps counting down either way. [M4]) */
+	/** Random orders on/off. (Patience keeps counting down either way. ) */
 	UPROPERTY(EditAnywhere, Category = "Kitchen Rush")
 	bool bOrdersEnabled = true;
 
 private:
-	int32 GetMaxTickets() const; // [M4]
+	int32 GetMaxTickets() const;
 	void SpawnOrder();
 	void AddStrike(const FText& Reason);
 
-	/** How well Plate matches Recipe: correctness 0..1, perfect order / cook, and [M3.7] the trick shots,
+	/** How well Plate matches Recipe: correctness 0..1, perfect order / cook, and the trick shots,
 	 *  Gus Assists and ground touches of its parts. */
-	FKRPlateScore ScorePlate(const FKRRecipeRow& Recipe, const AKRPlate* Plate) const; // [M3.7] returns a struct now
+	FKRPlateScore ScorePlate(const FKRRecipeRow& Recipe, const AKRPlate* Plate) const; // returns a struct now
 
-	/** [M3.5] Next recipe from the shuffle bag: every dish comes up once before any repeats. */
+	/** Next recipe from the shuffle bag: every dish comes up once before any repeats. */
 	FName DrawRecipe();
 
 	TArray<FKROrder> Orders;
-	TArray<FName> RecipeBag;   // [M3.5] recipes left in the current shuffle
-	TArray<FKRReceipt> Receipts; // [M3.7]
-	int32 NextReceiptId = 1;     // [M3.7]
-	FName LastRecipe;          // [M3.5] so a new bag never starts with the dish we just had
+	TArray<FName> RecipeBag;   // recipes left in the current shuffle
+	TArray<FKRReceipt> Receipts;
+	int32 NextReceiptId = 1;
+	FName LastRecipe;          // so a new bag never starts with the dish we just had
 	int32 NextOrderId = 1;
 	float SecondsUntilNextOrder = 0.f;
 	int32 Tips = 0;
 	int32 Strikes = 0;
 	bool bGameOver = false;
 
-	// [M4]
 	TArray<FName> Menu;
 	int32 MaxTicketsOverride = 0;
 	bool bTutorialMode = false;

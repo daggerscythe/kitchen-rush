@@ -1,7 +1,7 @@
 // KRTrash.cpp
 
 #include "Cooking/KRTrash.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Interaction/KRInteractionComponent.h"
@@ -15,38 +15,34 @@
 
 AKRTrash::AKRTrash()
 {
-	PrimaryActorTick.bCanEverTick = true; // [M3.5] for the lid
+	PrimaryActorTick.bCanEverTick = true; // for the lid
 	Mesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Mesh"));
 	SetRootComponent(Mesh);
 
-	// [M3.5] The lid is a second mesh on the same actor, so looking at it counts as looking at the bin.
+	// The lid is a second mesh on the same actor, so looking at it counts as looking at the bin.
 	// (Named "Hinged Lid" / HingedLid so it can't clash with a "Lid" you may have added in BP_Trash before.)
 	HingedLid = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Hinged Lid"));
 	HingedLid->SetupAttachment(Mesh);
 	HingedLid->SetRelativeLocation(FVector(0.f, 0.f, 50.f));
 }
 
-// [M3.5]
 void AKRTrash::BeginPlay()
 {
 	Super::BeginPlay();
 	LidClosedRotation = HingedLid->GetRelativeRotation();
 }
 
-// [M3.5]
 bool AKRTrash::IsBinnable(const AKRItem* Item)
 {
 	return Cast<AKRFood>(Item) || Cast<AKRHazardProjectile>(Item) || Cast<AKRShards>(Item);
 }
 
-// [M3.5]
 void AKRTrash::PopLidOpen()
 {
-	UKRAudioSubsystem::PlayAt(this, EKRSound::TrashDump, GetActorLocation()); // [M4.3] (only called when something goes in)
+	UKRAudioSubsystem::PlayAt(this, EKRSound::TrashDump, GetActorLocation()); // (only called when something goes in)
 	KeepOpenUntil = FPlatformTime::Seconds() + 0.8;
 }
 
-// [M3.5]
 void AKRTrash::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -76,20 +72,18 @@ FText AKRTrash::GetInteractPrompt(const AKRItem* HeldItem) const
 		}
 		return FText::GetEmpty();
 	}
-	if (IsBinnable(HeldItem)) // [M3] hot sauce too, [M3.5] and broken pieces
+	if (IsBinnable(HeldItem)) // hot sauce too, and broken pieces
 	{
 		return FText::Format(NSLOCTEXT("KitchenRush", "TrashFood", "Throw away {0}"), HeldItem->GetItemName());
 	}
 	return FText::GetEmpty();
 }
 
-// [M3]
 bool AKRTrash::CanReceiveItem(const AKRItem* Item) const
 {
-	return IsBinnable(Item); // [M3.5] broken pieces too
+	return IsBinnable(Item); // broken pieces too
 }
 
-// [M3]
 bool AKRTrash::ReceiveThrownItem(AKRItem* Item)
 {
 	if (!CanReceiveItem(Item))
@@ -97,7 +91,7 @@ bool AKRTrash::ReceiveThrownItem(AKRItem* Item)
 		return false;
 	}
 	Item->Destroy();
-	PopLidOpen(); // [M3.5]
+	PopLidOpen();
 	return true;
 }
 
@@ -115,13 +109,13 @@ bool AKRTrash::Interact(UKRInteractionComponent* Interactor)
 			return false;
 		}
 		Plate->ClearContents(); // the plate stays in your hands
-		PopLidOpen(); // [M3.5]
+		PopLidOpen();
 		return true;
 	}
-	if (IsBinnable(Held)) // [M3] hot sauce too, [M3.5] and broken pieces
+	if (IsBinnable(Held)) // hot sauce too, and broken pieces
 	{
 		Interactor->ReleaseHeldItem()->Destroy();
-		PopLidOpen(); // [M3.5]
+		PopLidOpen();
 		return true;
 	}
 	return false;

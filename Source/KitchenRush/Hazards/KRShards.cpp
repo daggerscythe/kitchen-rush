@@ -1,7 +1,7 @@
 // KRShards.cpp
 
 #include "Hazards/KRShards.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRTuningData.h"
 #include "Player/KRHealthComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -30,7 +30,7 @@ AKRShards::AKRShards()
 	Shard3 = MakePiece(this, Mesh, TEXT("Shard 3"));
 	Shard4 = MakePiece(this, Mesh, TEXT("Shard 4"));
 
-	// [M3.6] Pick-up area: blocks ONLY the Visibility channel (what the look-at trace uses), so it's
+	// Pick-up area: blocks ONLY the Visibility channel (what the look-at trace uses), so it's
 	// easy to aim at but nothing physical bumps into it.
 	PickArea = CreateDefaultSubobject<USphereComponent>(TEXT("Pick Area"));
 	PickArea->SetupAttachment(Mesh);
@@ -42,7 +42,6 @@ AKRShards::AKRShards()
 	PickArea->SetRelativeLocation(FVector(0.f, 0.f, 8.f));
 }
 
-// [M3.6]
 void AKRShards::SettleOnFloor()
 {
 	bSettled = true;
@@ -102,7 +101,7 @@ void AKRShards::Tick(float DeltaSeconds)
 		return;
 	}
 
-	// [M3.6] Settle: physics tilts the pile and the loose pieces poke through the floor, so once it has
+	// Settle: physics tilts the pile and the loose pieces poke through the floor, so once it has
 	// been nearly still for a moment (world time), switch physics off and lay it flat on the floor.
 	if (!bSettled && Mesh->IsSimulatingPhysics())
 	{
@@ -125,7 +124,7 @@ void AKRShards::Tick(float DeltaSeconds)
 
 	if (bOnPile && !bPlayerOnPile)
 	{
-		UKRAudioSubsystem::PlayAt(this, EKRSound::ShardCrunch, GetActorLocation()); // [M4.3] crunch
+		UKRAudioSubsystem::PlayAt(this, EKRSound::ShardCrunch, GetActorLocation()); // crunch
 		if (UKRHealthComponent* Health = Player->FindComponentByClass<UKRHealthComponent>())
 		{
 			Health->ApplyDamage(T->ShardStepDamage);

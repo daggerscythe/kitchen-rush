@@ -1,5 +1,5 @@
 // KRMainMenuWidget.h
-// [M4] The main menu, drawn over the frozen kitchen. WBP_MainMenu is its Blueprint.
+// The main menu, drawn over the frozen kitchen. WBP_MainMenu is its Blueprint.
 // The buttons must be named exactly as below (PlayButton, ContinueButton...).
 
 #pragma once

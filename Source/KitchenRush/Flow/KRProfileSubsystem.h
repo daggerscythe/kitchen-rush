@@ -1,5 +1,5 @@
 // KRProfileSubsystem.h
-// [M4] The player's profile: loads the save file when the game starts, keeps it while levels change,
+// The player's profile: loads the save file when the game starts, keeps it while levels change,
 // and saves whenever something changes. A GameInstance subsystem lives as long as the game runs
 // (it survives OpenLevel), so settings and the high score are always at hand:
 //     GetGameInstance()->GetSubsystem<UKRProfileSubsystem>()
@@ -41,23 +41,14 @@ public:
 	float GetUIScale() const;
 	void SetUIScale(float Value);
 
-	/** [M4.3] 0..1. The audio subsystem reads these every frame, so changes are heard straight away. */
+	/** 0..1. The audio subsystem reads these every frame, so changes are heard straight away. */
 	float GetMasterVolume() const;
 	void SetMasterVolume(float Value);
 
 	float GetMusicVolume() const;
 	void SetMusicVolume(float Value);
 
-	float GetSlowdownDelay() const;
-	void SetSlowdownDelay(float Value);
-
-	EKRStillMode GetStillMode() const;
-	void SetStillMode(EKRStillMode Mode, UWorld* World);
-
-	EKRMoveMode GetMoveMode() const;
-	void SetMoveMode(EKRMoveMode Mode, UWorld* World);
-
-	/** Push the saved settings into the running game (time modes, UI scale). The GameMode calls it on BeginPlay. */
+	/** Push the saved settings into the running game (UI scale). The GameMode calls it on BeginPlay. */
 	void ApplySettings(UWorld* World) const;
 
 private:

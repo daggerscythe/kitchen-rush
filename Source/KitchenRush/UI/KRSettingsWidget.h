@@ -33,16 +33,6 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> MasterVolumeText;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<USlider> MusicVolumeSlider;
 	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> MusicVolumeText;
-	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<USlider> SlowdownDelaySlider;
-	UPROPERTY(meta = (BindWidgetOptional)) TObjectPtr<UTextBlock> SlowdownDelayText;
-
-	/** Click to switch: Freeze / Slow. The text inside shows the current choice. */
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> StillModeButton;
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> StillModeText;
-
-	/** Click to switch: Clamped / Momentum. */
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> MoveModeButton;
-	UPROPERTY(meta = (BindWidget)) TObjectPtr<UTextBlock> MoveModeText;
 
 	UPROPERTY(meta = (BindWidget)) TObjectPtr<UButton> BackButton;
 
@@ -54,8 +44,5 @@ private:
 	UFUNCTION() void HandleUIScaleReleased();
 	UFUNCTION() void HandleMasterVolumeChanged(float Value);
 	UFUNCTION() void HandleMusicVolumeChanged(float Value);
-	UFUNCTION() void HandleSlowdownDelayChanged(float Value);
-	UFUNCTION() void HandleStillMode();
-	UFUNCTION() void HandleMoveMode();
 	UFUNCTION() void HandleBack();
 };

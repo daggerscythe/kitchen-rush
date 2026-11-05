@@ -1,5 +1,5 @@
 // KRAudioSubsystem.h
-// [M4.3] Plays every sound in the game and makes time audible:
+// Plays every sound in the game and makes time audible:
 //   - world sounds (sizzle, knives, Gus's mess) drop in pitch and get muffled as time slows
 //   - Grandma's watch ticks once per second of WORLD time, so it slows and stops with time
 //   - a tape-stop plays when you stop moving, a spin-up when you start

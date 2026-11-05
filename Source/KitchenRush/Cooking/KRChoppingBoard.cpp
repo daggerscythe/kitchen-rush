@@ -1,7 +1,7 @@
 // KRChoppingBoard.cpp 
 
 #include "Cooking/KRChoppingBoard.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
@@ -74,7 +74,7 @@ bool AKRChoppingBoard::ReceiveThrownItem(AKRItem* Item)
 	Food = Cast<AKRFood>(Item);
 	Food->OnStored(FoodSlot, FVector::ZeroVector);
 	Chops = 0;
-	UKRAudioSubsystem::PlayAt(this, EKRSound::Thud, GetActorLocation()); // [M4.3] landed on the board
+	UKRAudioSubsystem::PlayAt(this, EKRSound::Thud, GetActorLocation()); // landed on the board
 	return true;
 }
 
@@ -107,7 +107,7 @@ bool AKRChoppingBoard::Interact(UKRInteractionComponent* Interactor)
 			return false;
 		}
 		++Chops;
-		UKRAudioSubsystem::PlayAt(this, EKRSound::Chop, GetActorLocation()); // [M4.3]
+		UKRAudioSubsystem::PlayAt(this, EKRSound::Chop, GetActorLocation());
 		if (Chops >= UKRTuningData::Get(this)->ChopsNeeded)
 		{
 			Food->SetChopped();

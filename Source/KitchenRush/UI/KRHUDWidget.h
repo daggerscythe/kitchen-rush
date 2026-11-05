@@ -73,27 +73,27 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Orders")
 	TObjectPtr<UTexture2D> StrikeBrokenTexture;
 
-	/** [M3] Top-left health bar. */
+	/** Top-left health bar. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UProgressBar> HealthBar;
 
-	/** [M3] Full-screen red image that flashes when you're hurt. Set its colour to red with low alpha. */
+	/** Full-screen red image that flashes when you're hurt. Set its colour to red with low alpha. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> DamageFlash;
 
-	/** [M3.5] Big pulsing warning before Gus tosses or trips. Without it, the warning goes in MessageText. */
+	/** Big pulsing warning before Gus tosses or trips. Without it, the warning goes in MessageText. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> GusWarningText;
 
-	/** [M3.5] Arrow (pointing UP in the texture) that turns to point at Gus during a warning, when he's off-screen. */
+	/** Arrow (pointing UP in the texture) that turns to point at Gus during a warning, when he's off-screen. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> GusArrow;
 
-	/** [M3.5] Gus counts as "on screen" within this many degrees of where you look; outside it the arrow shows. */
+	/** Gus counts as "on screen" within this many degrees of where you look; outside it the arrow shows. */
 	UPROPERTY(EditAnywhere, Category = "Gus Warning")
 	float GusOnScreenAngle = 40.f;
 
-	// ---- [M3.7] Receipt log: served orders, line by line, on the left side of the screen ----
+	// ---- Receipt log: served orders, line by line, on the left side of the screen ----
 
 	/** A Vertical Box on the left-centre of the screen. Receipt lines are added to it. */
 	UPROPERTY(meta = (BindWidgetOptional))
@@ -115,11 +115,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Receipt Log")
 	float SlideDistance = 450.f;
 
-	/** [M4] Big centred text for "ACT 2 · THE DINNER RUSH" when an act starts. */
+	/** Big centred text for "ACT 2 · THE DINNER RUSH" when an act starts. */
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ActTitleText;
 
-	/** [M4] Real seconds the act banner stays up. */
+	/** Real seconds the act banner stays up. */
 	UPROPERTY(EditAnywhere, Category = "Acts")
 	float ActTitleSeconds = 3.5f;
 
@@ -130,14 +130,14 @@ protected:
 private:
 	void UpdateOrders();
 	void UpdateClock();
-	void UpdateHealth(); // [M3]
-	void UpdateGusWarning(); // [M3.5]
-	void UpdateReceiptLog(); // [M3.7]
-	void UpdateActTitle(float RealDeltaSeconds); // [M4]
-	double ShownActTitleTime = -100.0; // [M4] which act banner we're showing (-100 = none yet, as in the director)
-	float ActTitleAge = 0.f;          // [M4] unpaused seconds it has been up
+	void UpdateHealth();
+	void UpdateGusWarning();
+	void UpdateReceiptLog();
+	void UpdateActTitle(float RealDeltaSeconds);
+	double ShownActTitleTime = -100.0; // which act banner we're showing (-100 = none yet, as in the director)
+	float ActTitleAge = 0.f;          // unpaused seconds it has been up
 
-	/** [M3.7] A receipt line waiting to appear, or on screen. */
+	/** A receipt line waiting to appear, or on screen. */
 	struct FLogLine
 	{
 		FKRReceiptLine Line;

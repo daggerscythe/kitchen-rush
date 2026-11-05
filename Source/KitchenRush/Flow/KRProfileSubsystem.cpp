@@ -2,7 +2,6 @@
 
 #include "Flow/KRProfileSubsystem.h"
 #include "Flow/KRSaveGame.h"
-#include "Time/KRTimeSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "Engine/UserInterfaceSettings.h"
 #include "Engine/World.h"
@@ -23,12 +22,9 @@ void UKRProfileSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		Data = Cast<UKRSaveGame>(UGameplayStatics::CreateSaveGameObject(UKRSaveGame::StaticClass()));
 	}
 
-	// First run: start from Project Settings (time modes) and the current Application Scale (UI size).
+	// First run: start from the current Application Scale (UI size).
 	if (!Data->bSettingsInitialised)
 	{
-		const UKRTimeSettings* TimeSettings = GetDefault<UKRTimeSettings>();
-		Data->StillMode = TimeSettings->StillMode;
-		Data->MoveMode = TimeSettings->MoveMode;
 		Data->UIScale = GetDefault<UUserInterfaceSettings>()->ApplicationScale;
 		Data->MouseSensitivity = 1.f;
 		Data->bSettingsInitialised = true;
@@ -51,10 +47,8 @@ int32 UKRProfileSubsystem::GetHighScore() const { return Data->HighScore; }
 int32 UKRProfileSubsystem::GetLastActReached() const { return Data->LastActReached; }
 float UKRProfileSubsystem::GetMouseSensitivity() const { return Data->MouseSensitivity; }
 float UKRProfileSubsystem::GetUIScale() const { return Data->UIScale; }
-float UKRProfileSubsystem::GetMasterVolume() const { return Data->MasterVolume; } // [M4.3]
-float UKRProfileSubsystem::GetMusicVolume() const { return Data->MusicVolume; }   // [M4.3]
-EKRStillMode UKRProfileSubsystem::GetStillMode() const { return Data->StillMode; }
-EKRMoveMode UKRProfileSubsystem::GetMoveMode() const { return Data->MoveMode; }
+float UKRProfileSubsystem::GetMasterVolume() const { return Data->MasterVolume; }
+float UKRProfileSubsystem::GetMusicVolume() const { return Data->MusicVolume; }
 
 void UKRProfileSubsystem::RecordAct(int32 Act)
 {
@@ -90,52 +84,20 @@ void UKRProfileSubsystem::SetUIScale(float Value)
 	Save();
 }
 
-// [M4.3]
 void UKRProfileSubsystem::SetMasterVolume(float Value)
 {
 	Data->MasterVolume = FMath::Clamp(Value, 0.f, 1.f);
 	Save();
 }
 
-// [M4.3]
 void UKRProfileSubsystem::SetMusicVolume(float Value)
 {
 	Data->MusicVolume = FMath::Clamp(Value, 0.f, 1.f);
 	Save();
 }
 
-float UKRProfileSubsystem::GetSlowdownDelay() const { return Data->SlowdownDelay; }
-
-void UKRProfileSubsystem::SetSlowdownDelay(float Value)
-{
-	Data->SlowdownDelay = FMath::Clamp(Value, 0.f, 1.f);
-	GetMutableDefault<UKRTimeSettings>()->StillDelaySeconds = Data->SlowdownDelay;
-	Save();
-}
-
-void UKRProfileSubsystem::SetStillMode(EKRStillMode Mode, UWorld* World)
-{
-	Data->StillMode = Mode;
-	Save();
-	ApplySettings(World);
-}
-
-void UKRProfileSubsystem::SetMoveMode(EKRMoveMode Mode, UWorld* World)
-{
-	Data->MoveMode = Mode;
-	Save();
-	ApplySettings(World);
-}
-
 void UKRProfileSubsystem::ApplySettings(UWorld* World) const
 {
 	// UI scale is an engine-wide setting (the same one as Project Settings > User Interface > Application Scale).
 	GetMutableDefault<UUserInterfaceSettings>()->ApplicationScale = Data->UIScale;
-	GetMutableDefault<UKRTimeSettings>()->StillDelaySeconds = Data->SlowdownDelay;
-
-	if (UKRTimeSubsystem* Time = World ? World->GetSubsystem<UKRTimeSubsystem>() : nullptr)
-	{
-		Time->SetStillMode(Data->StillMode);
-		Time->SetMoveMode(Data->MoveMode);
-	}
 }

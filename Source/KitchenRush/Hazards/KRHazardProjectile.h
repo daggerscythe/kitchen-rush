@@ -12,7 +12,7 @@
 #include "Interaction/KRItem.h"
 #include "KRHazardProjectile.generated.h"
 
-class UAudioComponent; // [M4.3]
+class UAudioComponent;
 
 UENUM(BlueprintType)
 enum class EKRHazardKind : uint8
@@ -55,7 +55,7 @@ private:
 
 	float ClosestToPlayer = 1e9f; // knives: closest the knife got to the player this flight (cm)
 
-	/** [M4.3] The whoosh loop while a knife flies. */
+	/** The whoosh loop while a knife flies. */
 	UPROPERTY()
 	TObjectPtr<UAudioComponent> FlightLoop;
 };

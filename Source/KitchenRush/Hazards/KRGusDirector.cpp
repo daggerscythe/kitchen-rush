@@ -1,7 +1,7 @@
 // KRGusDirector.cpp
 
 #include "Hazards/KRGusDirector.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Hazards/KRHazardProjectile.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRTuningData.h"
@@ -27,7 +27,8 @@ AKRGusDirector::AKRGusDirector()
 	Arrow->ArrowSize = 2.f;
 	Arrow->bIsScreenSizeScaled = true;
 
-	// The default "Trip": 2 knives, 1 hot sauce, 2 steaks. The plan's Act 2.3 burst.
+	// The default "Trip", in order: steak, knife, hot sauce, steak, knife, knife.
+	// (BP_GusDirector keeps its own copy of these rows: set them there too.)
 	FKRGusEvent Trip;
 	Trip.Name = TEXT("Trip");
 	Trip.Shout = NSLOCTEXT("KitchenRush", "GusTrip", "GUS IS TRIPPING! LOOK OUT!");
@@ -38,11 +39,12 @@ AKRGusDirector::AKRGusDirector()
 		Launch.Delay = Delay;
 		Trip.Launches.Add(Launch);
 	};
-	AddRow(EKRGusAim::AtPlayer, 0.0f);         // row 0: knife
-	AddRow(EKRGusAim::NearPlayer, 0.25f);      // row 1: knife
-	AddRow(EKRGusAim::NearPlayer, 0.15f);      // row 2: hot sauce
-	AddRow(EKRGusAim::InFrontOfPlayer, 0.1f);  // row 3: steak
-	AddRow(EKRGusAim::InFrontOfPlayer, 0.4f);  // row 4: steak
+	AddRow(EKRGusAim::InFrontOfPlayer, 0.0f);  // row 0: steak
+	AddRow(EKRGusAim::AtPlayer, 0.15f);        // row 1: knife
+	AddRow(EKRGusAim::NearPlayer, 0.3f);       // row 2: hot sauce
+	AddRow(EKRGusAim::InFrontOfPlayer, 0.45f); // row 3: steak
+	AddRow(EKRGusAim::NearPlayer, 0.6f);       // row 4: knife
+	AddRow(EKRGusAim::AtPlayer, 0.75f);        // row 5: knife
 	Events.Add(Trip);
 }
 
@@ -51,21 +53,19 @@ void AKRGusDirector::BeginPlay()
 	Super::BeginPlay();
 	const UKRTuningData* T = UKRTuningData::Get(this);
 	SecondsToToss = T->TossInterval;
-	SecondsToTrip = T->FirstTripDelay > 0.f ? T->FirstTripDelay : T->TripInterval; // [M3.5]
+	SecondsToTrip = T->FirstTripDelay > 0.f ? T->FirstTripDelay : T->TripInterval;
 	WarningLocation = GetActorLocation();
 	if (!bAutoEvents)
 	{
-		SetAutoEvents(false); // [M4] the old single switch still works
+		SetAutoEvents(false); // the old single switch still works
 	}
 }
 
-// [M4]
 void AKRGusDirector::ResetTripTimer()
 {
 	SecondsToTrip = UKRTuningData::Get(this)->TripInterval;
 }
 
-// [M4]
 void AKRGusDirector::KeepAutoTripAwayFrom(float SecondsUntil)
 {
 	if (bAutoTrips && FMath::Abs(SecondsToTrip - SecondsUntil) < 12.f)
@@ -74,7 +74,6 @@ void AKRGusDirector::KeepAutoTripAwayFrom(float SecondsUntil)
 	}
 }
 
-// [M4]
 TSubclassOf<AKRFood> AKRGusDirector::FindFoodClass(EKRFoodType Type) const
 {
 	for (const TSubclassOf<AKRFood>& FoodClass : FoodClasses)
@@ -87,13 +86,12 @@ TSubclassOf<AKRFood> AKRGusDirector::FindFoodClass(EKRFoodType Type) const
 	return nullptr;
 }
 
-// [M4]
 bool AKRGusDirector::HasEvent(FName EventName) const
 {
 	return Events.ContainsByPredicate([EventName](const FKRGusEvent& E) { return E.Name == EventName; });
 }
 
-// [M4] An actor with this tag, or Gus himself.
+// An actor with this tag, or Gus himself.
 FVector AKRGusDirector::FindOrigin(FName Tag) const
 {
 	if (!Tag.IsNone())
@@ -109,7 +107,6 @@ FVector AKRGusDirector::FindOrigin(FName Tag) const
 	return GetActorLocation();
 }
 
-// [M3.5]
 void AKRGusDirector::StartWarning(const FText& Text, float Seconds)
 {
 	WarningText = Text;
@@ -117,12 +114,11 @@ void AKRGusDirector::StartWarning(const FText& Text, float Seconds)
 	WarningHoldLeft = 0.f;
 }
 
-// [M3.5]
 void AKRGusDirector::RunPending()
 {
 	const EPending What = Pending;
 	Pending = EPending::None;
-	WarningHoldLeft = (What == EPending::Event) ? 0.75f : 0.f; // [M3.6] world seconds; was 1.5
+	WarningHoldLeft = (What == EPending::Event) ? 0.75f : 0.f; // world seconds; was 1.5
 
 	if (What == EPending::Toss)
 	{
@@ -134,7 +130,7 @@ void AKRGusDirector::RunPending()
 		if (const FKRGusEvent* Event = Events.FindByPredicate([Name](const FKRGusEvent& E) { return E.Name == Name; }))
 		{
 			LaunchEventRows(*Event);
-			OnEventLaunched.Broadcast(Name); // [M4]
+			OnEventLaunched.Broadcast(Name);
 		}
 	}
 }
@@ -171,7 +167,7 @@ void AKRGusDirector::Tick(float DeltaSeconds)
 		return;
 	}
 
-	// [M3.5] Count down the warning, then do the thing.
+	// Count down the warning, then do the thing.
 	if (Pending != EPending::None)
 	{
 		PendingSecondsLeft -= DeltaSeconds;
@@ -194,7 +190,7 @@ void AKRGusDirector::Tick(float DeltaSeconds)
 		TossIngredient(Recipe);
 	}
 
-	if (bAutoToss && T->TossInterval > 0.f) // [M4] separate switches
+	if (bAutoToss && T->TossInterval > 0.f) // separate switches
 	{
 		SecondsToToss -= DeltaSeconds;
 		if (SecondsToToss <= 0.f)
@@ -210,7 +206,7 @@ void AKRGusDirector::Tick(float DeltaSeconds)
 			}
 		}
 	}
-	if (bAutoTrips && T->TripInterval > 0.f) // [M4]
+	if (bAutoTrips && T->TripInterval > 0.f)
 	{
 		SecondsToTrip -= DeltaSeconds;
 		if (SecondsToTrip <= 0.f)
@@ -310,12 +306,12 @@ void AKRGusDirector::TossIngredient(FName ForRecipe)
 	{
 		return; // a trip is coming: don't replace it with a toss
 	}
-	// [M3.5] Call it out first; Tick launches it when the countdown runs out.
-	// [M3.6] A toss is just a normal HUD message (no big warning or arrow).
+	// Call it out first; Tick launches it when the countdown runs out.
+	// A toss is just a normal HUD message (no big warning or arrow).
 	Pending = EPending::Toss;
 	PendingFood = Picked;
 	StartWarning(FText::GetEmpty(), UKRTuningData::Get(this)->TossWarningSeconds);
-	UKRAudioSubsystem::PlayAt(this, EKRSound::GusHeadsUp, GetActorLocation()); // [M4.3] "Heads up!"
+	UKRAudioSubsystem::PlayAt(this, EKRSound::GusHeadsUp, GetActorLocation()); // "Heads up!"
 	Shout(FText::Format(NSLOCTEXT("KitchenRush", "GusToss", "Gus: Heads up, chef! {0} coming your way!"),
 		Picked->GetDefaultObject<AKRFood>()->DisplayName));
 }
@@ -327,20 +323,20 @@ bool AKRGusDirector::PlayEvent(FName EventName)
 	{
 		return false;
 	}
-	// [M3.5] Warn first; Tick calls LaunchEventRows when the warning runs out.
+	// Warn first; Tick calls LaunchEventRows when the warning runs out.
 	Pending = EPending::Event;
 	PendingEvent = EventName;
-	WarningLocation = FindOrigin(Event->OriginTag); // [M4] the HUD arrow points here
-	UKRAudioSubsystem::PlayAt(this, EKRSound::GusWatchOut, GetActorLocation()); // [M4.3] "Watch out!" (from Gus, even for the shelf)
+	WarningLocation = FindOrigin(Event->OriginTag); // the HUD arrow points here
+	UKRAudioSubsystem::PlayAt(this, EKRSound::GusWatchOut, GetActorLocation()); // "Watch out!" (from Gus, even for the shelf)
 	StartWarning(Event->Shout, Event->WarningSeconds > 0.f ? Event->WarningSeconds : UKRTuningData::Get(this)->TripWarningSeconds);
 	return true;
 }
 
-// [M3.5] (This was the second half of PlayEvent in M3.)
+// (This was the second half of PlayEvent in M3.)
 void AKRGusDirector::LaunchEventRows(const FKRGusEvent& Event)
 {
 	const FName EventName = Event.Name;
-	const FVector Origin = FindOrigin(Event.OriginTag); // [M4] Gus, or e.g. the shelf
+	const FVector Origin = FindOrigin(Event.OriginTag); // Gus, or e.g. the shelf
 	for (const FKRGusLaunch& Launch : Event.Launches)
 	{
 		if (!Launch.ItemClass)
@@ -384,7 +380,7 @@ FVector AKRGusDirector::GetAimPoint(EKRGusAim Aim, const FVector& Origin) const
 		return Chest;
 	case EKRGusAim::InFrontOfPlayer:
 	{
-		const FVector TowardGus = (Origin - PlayerLocation).GetSafeNormal2D(); // [M4] toward wherever it's thrown from
+		const FVector TowardGus = (Origin - PlayerLocation).GetSafeNormal2D(); // toward wherever it's thrown from
 		return Chest + TowardGus * CatchPointDistance;
 	}
 	case EKRGusAim::NearPlayer:
@@ -398,10 +394,10 @@ FVector AKRGusDirector::GetAimPoint(EKRGusAim Aim, const FVector& Origin) const
 
 AKRItem* AKRGusDirector::LaunchItem(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim)
 {
-	return LaunchItemFrom(ItemClass, Aim, GetActorLocation()); // [M4]
+	return LaunchItemFrom(ItemClass, Aim, GetActorLocation());
 }
 
-// [M4] (was the body of LaunchItem)
+// (was the body of LaunchItem)
 AKRItem* AKRGusDirector::LaunchItemFrom(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim, const FVector& Origin)
 {
 	if (!ItemClass)
@@ -409,9 +405,11 @@ AKRItem* AKRGusDirector::LaunchItemFrom(TSubclassOf<AKRItem> ItemClass, EKRGusAi
 		return nullptr;
 	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
-	const FVector2D Spread = FMath::RandPointInCircle(SpawnSpread);
-	const FVector Start = Origin + FVector(Spread.X, Spread.Y, FMath::FRandRange(-SpawnSpread, SpawnSpread) * 0.5f);
 	const FVector Target = GetAimPoint(Aim, Origin);
+	// Start a little way out toward the target, so nothing is born inside the shelf (or Gus's counter).
+	const FVector Away = (Target - Origin).GetSafeNormal();
+	const FVector2D Spread = FMath::RandPointInCircle(SpawnSpread);
+	const FVector Start = Origin + Away * LaunchClearance + FVector(Spread.X, Spread.Y, FMath::FRandRange(-SpawnSpread, SpawnSpread) * 0.5f);
 
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;

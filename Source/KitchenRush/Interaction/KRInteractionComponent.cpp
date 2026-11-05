@@ -1,9 +1,10 @@
 // KRInteractionComponent.cpp
 
 #include "Interaction/KRInteractionComponent.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Interaction/KRInteractable.h"
 #include "Interaction/KRItem.h"
+#include "Cooking/KRPan.h"
 #include "Time/KRTimeSubsystem.h"
 #include "Cooking/KRTuningData.h"
 #include "Camera/CameraComponent.h"
@@ -59,7 +60,7 @@ void UKRInteractionComponent::UpdateFocus()
 		Params.AddIgnoredActor(HeldItem.Get());
 	}
 
-	// [M3] Case 0: catching. Flying things are small and fast, so sweep a fat sphere instead of a thin
+	// Case 0: catching. Flying things are small and fast, so sweep a fat sphere instead of a thin
 	// line (aim assist), out to the catch range. If it finds something catchable, that wins.
 	{
 		const UKRTuningData* T = UKRTuningData::Get(this);
@@ -89,6 +90,11 @@ void UKRInteractionComponent::UpdateFocus()
 	}
 
 	// Case 1: something interactable with something to say.
+	// Looking at a pan: tell it where the crosshair is, so it knows "the steak" from "the pan".
+	if (AKRPan* Pan = Cast<AKRPan>(Hit.GetActor()))
+	{
+		Pan->UpdateAim(Start, Camera->GetForwardVector());
+	}
 	if (IKRInteractable* Target = Cast<IKRInteractable>(Hit.GetActor()))
 	{
 		const FText TargetPrompt = Target->GetInteractPrompt(HeldItem.Get());
@@ -153,6 +159,6 @@ void UKRInteractionComponent::PlaceHeldItem()
 	HeldItem = nullptr;
 
 	const float Yaw = GetOwner()->GetActorRotation().Yaw;
-	Item->OnPlaced(PlaceLocation + FVector(0.f, 0.f, 1.f), FRotator(0.f, Yaw, 0.f));
-	UKRAudioSubsystem::PlayAt(this, Item->GetSetDownSound(), PlaceLocation); // [M4.3] plates clink
+	Item->OnPlaced(PlaceLocation + FVector(0.f, 0.f, 1.f), FRotator(0.f, Yaw + Item->GetPlaceYawOffset(), 0.f));
+	UKRAudioSubsystem::PlayAt(this, Item->GetSetDownSound(), PlaceLocation); // plates clink
 }

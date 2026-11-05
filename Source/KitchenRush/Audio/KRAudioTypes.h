@@ -1,5 +1,5 @@
 // KRAudioTypes.h
-// [M4.3] The name of every sound in the game. Code asks for a sound by name (EKRSound::Chop);
+// The name of every sound in the game. Code asks for a sound by name (EKRSound::Chop);
 // DA_Audio says which file plays and how loud. Plain C++ (no UENUM), so any header can include it cheaply.
 
 #pragma once

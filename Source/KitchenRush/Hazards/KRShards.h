@@ -1,5 +1,5 @@
 // KRShards.h
-// [M3.5] What's left of a dropped plate or bowl: a small pile of sharp pieces on the floor.
+// What's left of a dropped plate or bowl: a small pile of sharp pieces on the floor.
 // Stepping on the pile hurts (once each time you step onto it). Stand next to it and press E
 // to pick the whole pile up, then bin it (E at the trash, or throw it in).
 // Make BP_Shards from this and pick the four shard meshes.
@@ -40,7 +40,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Shards")
 	float SpreadRadius = 22.f;
 
-	/** [M3.6] An invisible ball around the whole pile that only the look-at trace sees,
+	/** An invisible ball around the whole pile that only the look-at trace sees,
 	 *  so aiming anywhere near the pile picks it up (not just at one tiny shard). */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shards")
 	TObjectPtr<USphereComponent> PickArea;
@@ -48,12 +48,12 @@ protected:
 private:
 	void LayOut(float Spread);
 
-	/** [M3.6] Once the pile stops moving: physics off, lie flat, sit exactly on the floor (no pieces poking through). */
+	/** Once the pile stops moving: physics off, lie flat, sit exactly on the floor (no pieces poking through). */
 	void SettleOnFloor();
 
 	TArray<FVector2D> Offsets;  // where each extra piece sits, as a fraction of the spread
 	bool bPlayerOnPile = false; // so one step = one hit, not damage every frame
 	bool bShownHeldLayout = false;
-	bool bSettled = false;          // [M3.6]
-	float RestingSeconds = 0.f;     // [M3.6] how long it's been nearly still
+	bool bSettled = false;
+	float RestingSeconds = 0.f;     // how long it's been nearly still
 };

@@ -1,7 +1,7 @@
 // KRCookware.cpp
 
 #include "Cooking/KRCookware.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRStove.h"
 #include "Cooking/KRTuningData.h"
 #include "UI/KRMeterWidget.h"
@@ -49,7 +49,7 @@ void AKRCookware::OnHitByThrownItem(AKRItem* Item)
 		Direction = GetActorForwardVector();
 	}
 	const bool bWasOnBurner = IsOnBurner();
-	UKRAudioSubsystem::PlayAt(this, GetImpactSound(), GetActorLocation()); // [M4.3] clang!
+	UKRAudioSubsystem::PlayAt(this, GetImpactSound(), GetActorLocation()); // clang!
 	const float Speed = UKRTuningData::Get(this)->KnockSpeed;
 	// bVelChange = true: "add this much speed", whatever the mesh's mass is.
 	Mesh->AddImpulse(Direction * Speed + FVector(0.f, 0.f, Speed * 0.3f), NAME_None, true);
@@ -73,7 +73,7 @@ void AKRCookware::Tick(float DeltaSeconds)
 		Cook(DeltaSeconds);
 	}
 	UpdateMeter();
-	UpdateCookSound(); // [M4.3]
+	UpdateCookSound();
 }
 
 void AKRCookware::SetMeter(bool bVisible, float Percent, const FLinearColor& Color, const FText& Label)

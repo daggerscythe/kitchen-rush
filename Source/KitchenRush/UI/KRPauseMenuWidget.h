@@ -1,5 +1,5 @@
 // KRPauseMenuWidget.h
-// [M4] Esc / P during play. WBP_PauseMenu is its Blueprint.
+// Esc / P during play. WBP_PauseMenu is its Blueprint.
 
 #pragma once
 

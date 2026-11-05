@@ -1,5 +1,5 @@
 // KRReceiptLineWidget.h
-// [M3.7] One line of an order receipt in the HUD's receipt log ("+$20  Nana's Tomato Soup",
+// One line of an order receipt in the HUD's receipt log ("+$20  Nana's Tomato Soup",
 // "- Perfect cook! (+$2)", "Total: $27"). WBP_ReceiptLine is its Blueprint: just one Text called LineText.
 
 #pragma once

@@ -1,7 +1,7 @@
 // KRPot.cpp 
 
 #include "Cooking/KRPot.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRPlate.h"
 #include "Cooking/KRTuningData.h"
@@ -34,13 +34,11 @@ static bool IsChoppedTomato(const AKRItem* Item)
 	return Food && Food->FoodType == EKRFoodType::Tomato && Food->IsChopped();
 }
 
-// [M3]
 bool AKRPot::CanReceiveItem(const AKRItem* Item) const
 {
 	return IsChoppedTomato(Item) && TomatoCount < UKRTuningData::Get(this)->SoupTomatoesNeeded;
 }
 
-// [M3]
 bool AKRPot::ReceiveThrownItem(AKRItem* Item)
 {
 	if (!CanReceiveItem(Item))
@@ -51,10 +49,9 @@ bool AKRPot::ReceiveThrownItem(AKRItem* Item)
 	return true;
 }
 
-// [M3]
 void AKRPot::AddTomato(AKRItem* Tomato)
 {
-	// [M3.7] The soup inherits each tomato's tally (the tomato itself is about to be destroyed).
+	// The soup inherits each tomato's tally (the tomato itself is about to be destroyed).
 	if (const AKRFood* Food = Cast<AKRFood>(Tomato))
 	{
 		const FKRPlatedPart Part = Food->GetPlatedPart();
@@ -62,19 +59,17 @@ void AKRPot::AddTomato(AKRItem* Tomato)
 		TomatoTally.GusAssists += Part.GusAssists;
 		TomatoTally.GroundTouches += Part.GroundTouches;
 	}
-	UKRAudioSubsystem::PlayAt(this, EKRSound::Plop, GetActorLocation()); // [M4.3]
+	UKRAudioSubsystem::PlayAt(this, EKRSound::Plop, GetActorLocation());
 	Tomato->Destroy(); // the tomato goes into the soup
 	++TomatoCount;
 	UpdateSurface();
 }
 
-// [M4]
 bool AKRPot::IsSimmering() const
 {
 	return !IsHeld() && TomatoCount >= UKRTuningData::Get(this)->SoupTomatoesNeeded && IsOnBurner();
 }
 
-// [M4]
 void AKRPot::FastForwardToBoilOver(float SecondsLeft)
 {
 	const UKRTuningData* T = UKRTuningData::Get(this);
@@ -83,7 +78,7 @@ void AKRPot::FastForwardToBoilOver(float SecondsLeft)
 
 FText AKRPot::GetInteractPrompt(const AKRItem* HeldItem) const
 {
-	if (IsInFlight()) // [M3]
+	if (IsInFlight())
 	{
 		return GetCatchPrompt(HeldItem);
 	}
@@ -110,7 +105,7 @@ FText AKRPot::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRPot::Interact(UKRInteractionComponent* Interactor)
 {
-	if (IsInFlight()) // [M3]
+	if (IsInFlight())
 	{
 		return CatchBy(Interactor);
 	}
@@ -130,7 +125,7 @@ bool AKRPot::Interact(UKRInteractionComponent* Interactor)
 	{
 		if (Bowl->CanAcceptSoup() && IsSoupReady())
 		{
-			Bowl->AddSoup(SimmerSeconds < T->SoupBoilWarnAt, TomatoTally); // [M3.7] the tomatoes' tally
+			Bowl->AddSoup(SimmerSeconds < T->SoupBoilWarnAt, TomatoTally); // the tomatoes' tally
 			ResetPot();
 			return true;
 		}
@@ -146,9 +141,9 @@ void AKRPot::Cook(float WorldSeconds)
 	{
 		return;
 	}
-	const float Before = SimmerSeconds; // [M4.3]
+	const float Before = SimmerSeconds;
 	SimmerSeconds += WorldSeconds;
-	// [M4.3] Ding: the soup just became ready.
+	// Ding: the soup just became ready.
 	if (Before < T->SoupReadyAt && SimmerSeconds >= T->SoupReadyAt)
 	{
 		UKRAudioSubsystem::PlayAt(this, EKRSound::CookDone, GetActorLocation());
@@ -159,11 +154,10 @@ void AKRPot::Cook(float WorldSeconds)
 	}
 }
 
-// [M3]
 void AKRPot::BoilOver()
 {
 	const UKRTuningData* T = UKRTuningData::Get(this);
-	UKRAudioSubsystem::PlayAt(this, EKRSound::BoilOver, GetActorLocation()); // [M4.3] hiss
+	UKRAudioSubsystem::PlayAt(this, EKRSound::BoilOver, GetActorLocation()); // hiss
 
 	UClass* ZoneClass = SpillClass ? SpillClass.Get() : AKRHazardZone::StaticClass();
 	FActorSpawnParameters Params;
@@ -179,7 +173,7 @@ void AKRPot::BoilOver()
 	ResetPot();
 }
 
-// [M4.3] Bubble while the soup simmers.
+// Bubble while the soup simmers.
 void AKRPot::UpdateCookSound()
 {
 	UKRAudioSubsystem::UpdateLoop(this, CookLoop, EKRSound::PotBubble, IsSimmering(), Mesh);
@@ -218,7 +212,7 @@ void AKRPot::UpdateMeter()
 void AKRPot::ResetPot()
 {
 	TomatoCount = 0;
-	TomatoTally = FKRPlatedPart(); // [M3.7]
+	TomatoTally = FKRPlatedPart();
 	SimmerSeconds = 0.f;
 	UpdateSurface();
 }

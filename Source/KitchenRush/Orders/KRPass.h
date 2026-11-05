@@ -28,7 +28,7 @@ protected:
 	UFUNCTION()
 	void OnBoxOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	/** Blocks the Visibility channel (look-at trace) and [M3.5] overlaps physics objects (thrown plates). Nothing bumps into it. */
+	/** Blocks the Visibility channel (look-at trace) and overlaps physics objects (thrown plates). Nothing bumps into it. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pass")
 	TObjectPtr<UBoxComponent> Box;
 };

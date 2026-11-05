@@ -1,5 +1,5 @@
 // KRActDirector.h
-// [M4] Runs one Friday night: the main menu, Act 1 (Nana's tutorial), Act 2 (the dinner rush),
+// Runs one Friday night: the main menu, Act 1 (Nana's tutorial), Act 2 (the dinner rush),
 // Act 3 (closing time) and the end at 10:00 PM. Place one BP_ActDirector in Lvl_Kitchen.
 //
 // It's a "state machine": Beat says which step of the night we're on, and each step waits for
@@ -113,7 +113,7 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Timeline") float SpecialHour = 21.6667f;
 	UPROPERTY(EditAnywhere, Category = "Timeline") float EndHour = 22.f;
 
-	/** [M4.2] How long Act 2 (5:00 to 7:30 PM) lasts, in world seconds. Its clock runs faster to fit,
+	/** How long Act 2 (5:00 to 7:30 PM) lasts, in world seconds. Its clock runs faster to fit,
 	 *  so the beats keep their times. 0 = the normal clock (World Seconds Per Game Hour in DA_Tuning: 150 s). */
 	UPROPERTY(EditAnywhere, Category = "Timeline", meta = (ClampMin = "0")) float Act2WorldSeconds = 100.f;
 
@@ -122,6 +122,12 @@ protected:
 
 	/** World seconds after the steak lands in the pan before Gus tosses the onion. */
 	UPROPERTY(EditAnywhere, Category = "Timeline") float OnionTossDelay = 1.f;
+	/** Safety nets for the Act 2 lesson, in real seconds (menus and notes don't count):
+	 *  no steak cooking after this long moves on to the onion anyway... */
+	UPROPERTY(EditAnywhere, Category = "Timeline") float ThrowSteakTimeout = 45.f;
+	/** ...and the onion step starts the rush anyway after this long, or once Gus has thrown Max Onion Tosses. */
+	UPROPERTY(EditAnywhere, Category = "Timeline") float OnionTimeout = 25.f;
+	UPROPERTY(EditAnywhere, Category = "Timeline") int32 MaxOnionTosses = 3;
 
 	/** Chain reaction: the pot is pushed to boil over this many world seconds after Gus trips. */
 	UPROPERTY(EditAnywhere, Category = "Timeline") float ChainReactionBoilSeconds = 6.f;
@@ -168,13 +174,15 @@ private:
 	/** Play Gus's trip; FreezeNote (if not empty) appears as an auto-freeze just after the launch. */
 	void PlayScriptedTrip(const FText& FreezeNote);
 	void TossOnion();
+	void StartOnionStep();
+	void FinishHeadsUpLesson();
 	void OpenPot();
 	void SetLocked(AActor* Actor, bool bLocked);
 	void DropShelfBoards();
 	void ShowActTitle(const FText& Title);
 	float HoursToShiftSeconds(float Hours) const;
 
-	/** [M4.2] How many clock seconds pass per world second right now (faster than 1 in a shortened Act 2). */
+	/** How many clock seconds pass per world second right now (faster than 1 in a shortened Act 2). */
 	float GetClockSpeed() const;
 
 	/** World seconds until the next scripted trip-like beat (so Gus's timed trips stay clear of it). */
@@ -193,6 +201,9 @@ private:
 	TWeakObjectPtr<AKRItem> TutorialOnion;
 	float OnionGoneSeconds = 0.f;
 	float OnionDelayLeft = -1.f; // counting down to the onion toss
+	bool bOnionTossed = false;
+	int32 OnionTosses = 0;
+	float LessonRealSeconds = 0.f; // real seconds on the current lesson step
 
 	bool bShownBurnt = false;
 	bool bTrip1Done = false;

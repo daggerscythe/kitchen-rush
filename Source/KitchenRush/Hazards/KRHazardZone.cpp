@@ -1,7 +1,7 @@
 // KRHazardZone.cpp
 
 #include "Hazards/KRHazardZone.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Player/KRHealthComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "EngineUtils.h"
@@ -30,7 +30,7 @@ void AKRHazardZone::Start(float InSeconds, float InDamagePerSecond, float InRadi
 	DamagePerSecond = InDamagePerSecond;
 	Radius = InRadius;
 	bBlocksBurner = bInBlocksBurner;
-	// [M4.3] Only the grease fire blocks a burner, so that's how we know it's a fire.
+	// Only the grease fire blocks a burner, so that's how we know it's a fire.
 	UKRAudioSubsystem::UpdateLoop(this, FireLoop, EKRSound::FireLoop, bBlocksBurner, Visual);
 }
 

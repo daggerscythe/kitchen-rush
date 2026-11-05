@@ -1,5 +1,5 @@
 // KRAudioData.h
-// [M4.3] DA_Audio: which file plays for every sound, how loud, and how time bends them.
+// DA_Audio: which file plays for every sound, how loud, and how time bends them.
 // Make it once: Content Browser > right-click > Miscellaneous > Data Asset > KRAudioData, name it DA_Audio,
 // then set it as "Audio" on BP_FirstPersonGameMode. Any slot left empty is simply silent.
 //

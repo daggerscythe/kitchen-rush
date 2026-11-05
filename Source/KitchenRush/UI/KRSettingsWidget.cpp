@@ -45,17 +45,6 @@ void UKRSettingsWidget::NativeConstruct()
 		MusicVolumeSlider->SetValue(Profile ? Profile->GetMusicVolume() : 1.f);
 		MusicVolumeSlider->OnValueChanged.AddUniqueDynamic(this, &UKRSettingsWidget::HandleMusicVolumeChanged);
 	}
-	if (SlowdownDelaySlider)
-	{
-		SlowdownDelaySlider->SetMinValue(0.f);
-		SlowdownDelaySlider->SetMaxValue(1.f);
-		SlowdownDelaySlider->SetStepSize(0.05f);
-		SlowdownDelaySlider->SetValue(Profile ? Profile->GetSlowdownDelay() : 0.2f);
-		SlowdownDelaySlider->OnValueChanged.AddUniqueDynamic(this, &UKRSettingsWidget::HandleSlowdownDelayChanged);
-	}
-
-	StillModeButton->OnClicked.AddUniqueDynamic(this, &UKRSettingsWidget::HandleStillMode);
-	MoveModeButton->OnClicked.AddUniqueDynamic(this, &UKRSettingsWidget::HandleMoveMode);
 	BackButton->OnClicked.AddUniqueDynamic(this, &UKRSettingsWidget::HandleBack);
 
 	RefreshTexts();
@@ -85,16 +74,6 @@ void UKRSettingsWidget::RefreshTexts()
 	{
 		MusicVolumeText->SetText(FText::FromString(FString::Printf(TEXT("MUSIC VOLUME: %d%%"), FMath::RoundToInt(MusicVolumeSlider->GetValue() * 100.f))));
 	}
-	if (SlowdownDelayText && SlowdownDelaySlider)
-	{
-		SlowdownDelayText->SetText(FText::FromString(FString::Printf(TEXT("SLOWDOWN DELAY: %.2f s"), SlowdownDelaySlider->GetValue())));
-	}
-	StillModeText->SetText(Profile->GetStillMode() == EKRStillMode::Freeze
-		? NSLOCTEXT("KitchenRush", "StillFreeze", "Standing still: Freeze")
-		: NSLOCTEXT("KitchenRush", "StillSlow", "Standing still: Slow motion"));
-	MoveModeText->SetText(Profile->GetMoveMode() == EKRMoveMode::Clamped
-		? NSLOCTEXT("KitchenRush", "MoveClamped", "Walking: Normal speed")
-		: NSLOCTEXT("KitchenRush", "MoveMomentum", "Walking: Momentum (speeds up)"));
 }
 
 void UKRSettingsWidget::HandleSensitivityChanged(float Value)
@@ -133,35 +112,6 @@ void UKRSettingsWidget::HandleMusicVolumeChanged(float Value)
 	if (UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this))
 	{
 		Profile->SetMusicVolume(Value);
-	}
-	RefreshTexts();
-}
-
-void UKRSettingsWidget::HandleSlowdownDelayChanged(float Value)
-{
-	if (UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this))
-	{
-		Profile->SetSlowdownDelay(Value);
-	}
-	RefreshTexts();
-}
-
-void UKRSettingsWidget::HandleStillMode()
-{
-	if (UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this))
-	{
-		const EKRStillMode Next = Profile->GetStillMode() == EKRStillMode::Freeze ? EKRStillMode::Slow : EKRStillMode::Freeze;
-		Profile->SetStillMode(Next, GetWorld());
-	}
-	RefreshTexts();
-}
-
-void UKRSettingsWidget::HandleMoveMode()
-{
-	if (UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this))
-	{
-		const EKRMoveMode Next = Profile->GetMoveMode() == EKRMoveMode::Clamped ? EKRMoveMode::Momentum : EKRMoveMode::Clamped;
-		Profile->SetMoveMode(Next, GetWorld());
 	}
 	RefreshTexts();
 }

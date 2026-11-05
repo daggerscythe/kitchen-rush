@@ -6,8 +6,8 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
-#include "KitchenRushGameMode.h" // [M4] game events
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "KitchenRushGameMode.h" // game events
+#include "Audio/KRAudioSubsystem.h"
 
 AKRItem::AKRItem()
 {
@@ -21,13 +21,12 @@ AKRItem::AKRItem()
 	Mesh->SetCollisionProfileName(TEXT("PhysicsActor"));
 	Mesh->SetSimulatePhysics(true);
 	Mesh->SetUseCCD(true); // continuous collision: stops small fast items passing through counters
-	Mesh->SetNotifyRigidBodyCollision(true); // [M3] "Simulation Generates Hit Events": needed for OnMeshHit
-	Mesh->SetGenerateOverlapEvents(true);    // [M3.5] so the pass can notice a plate flying through it
+	Mesh->SetNotifyRigidBodyCollision(true); // "Simulation Generates Hit Events": needed for OnMeshHit
+	Mesh->SetGenerateOverlapEvents(true);    // so the pass can notice a plate flying through it
 
 	DisplayName = NSLOCTEXT("KitchenRush", "DefaultItemName", "Item");
 }
 
-// [M3]
 void AKRItem::BeginPlay()
 {
 	Super::BeginPlay();
@@ -45,7 +44,7 @@ void AKRItem::OnPickedUp(USceneComponent* HoldPoint)
 {
 	bHeld = true;
 	bStored = false;
-	EndFlight(); // [M3]
+	EndFlight();
 	Mesh->SetSimulatePhysics(false); // physics must be off before attaching
 	SetActorEnableCollision(false);  // so the held item doesn't block your own line trace
 	AttachToComponent(HoldPoint, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
@@ -55,7 +54,7 @@ void AKRItem::OnPlaced(const FVector& Location, const FRotator& Rotation)
 {
 	bHeld = false;
 	bStored = false;
-	EndFlight(); // [M3]
+	EndFlight();
 	DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
 	SetActorLocationAndRotation(Location, Rotation, false, nullptr, ETeleportType::TeleportPhysics);
 	SetActorEnableCollision(true);
@@ -66,14 +65,13 @@ void AKRItem::OnStored(USceneComponent* Parent, const FVector& RelativeLocation)
 {
 	bHeld = false;
 	bStored = true;
-	EndFlight(); // [M3]
+	EndFlight();
 	Mesh->SetSimulatePhysics(false);
 	SetActorEnableCollision(false); // the container gets the line trace, not the item inside it
 	AttachToComponent(Parent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	SetActorRelativeLocation(RelativeLocation);
 }
 
-// [M3]
 void AKRItem::OnThrown(const FVector& StartLocation, const FVector& Velocity, bool bFromGus)
 {
 	bHeld = false;
@@ -96,14 +94,12 @@ void AKRItem::OnThrown(const FVector& StartLocation, const FVector& Velocity, bo
 	PostThrown(Velocity);
 }
 
-// [M3]
 void AKRItem::EndFlight()
 {
 	bInFlight = false;
 	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore); // PhysicsActor's normal setting
 }
 
-// [M3]
 FText AKRItem::GetCatchPrompt(const AKRItem* HeldItem) const
 {
 	if (!HeldItem)
@@ -118,7 +114,6 @@ FText AKRItem::GetCatchPrompt(const AKRItem* HeldItem) const
 	return FText::GetEmpty();
 }
 
-// [M3]
 bool AKRItem::CatchBy(UKRInteractionComponent* Interactor)
 {
 	if (!Interactor || !bInFlight)
@@ -141,23 +136,22 @@ bool AKRItem::CatchBy(UKRInteractionComponent* Interactor)
 	}
 	if (bCaught)
 	{
-		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::Catch, NAME_None, bFromGus ? 1.f : 0.f); // [M4]
+		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::Catch, NAME_None, bFromGus ? 1.f : 0.f);
 	}
 	return bCaught;
 }
 
-// [M3]
 void AKRItem::OnMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (OtherActor == this)
 	{
 		return;
 	}
-	if (!bTouchedGround && IsFloorHit(Hit)) // [M3.7]
+	if (!bTouchedGround && IsFloorHit(Hit))
 	{
 		bTouchedGround = true;
 	}
-	OnPhysicsHit(OtherActor, Hit); // [M3.5]
+	OnPhysicsHit(OtherActor, Hit);
 	if (!bInFlight || IsActorBeingDestroyed()) // (a plate may have just shattered)
 	{
 		return;
@@ -173,7 +167,7 @@ void AKRItem::OnMeshHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, U
 	HandleFlightHit(OtherActor, Hit);
 }
 
-// [M3.7] (moved here from AKRPlate so every item can use it)
+// (moved here from AKRPlate so every item can use it)
 bool AKRItem::IsFloorHit(const FHitResult& Hit) const
 {
 	const ACharacter* Player = Cast<ACharacter>(UGameplayStatics::GetPlayerPawn(this, 0));
@@ -185,7 +179,6 @@ bool AKRItem::IsFloorHit(const FHitResult& Hit) const
 	return Hit.ImpactPoint.Z <= FeetZ + 25.f;
 }
 
-// [M3]
 bool AKRItem::TryLandIn(AActor* OtherActor)
 {
 	IKRInteractable* Target = Cast<IKRInteractable>(OtherActor);
@@ -193,7 +186,7 @@ bool AKRItem::TryLandIn(AActor* OtherActor)
 	{
 		return false;
 	}
-	// [M3.7] Mark this place BEFORE ReceiveThrownItem: the pot reads the marks, then destroys the tomato.
+	// Mark this place BEFORE ReceiveThrownItem: the pot reads the marks, then destroys the tomato.
 	// A bit per place, so throwing the same tomato onto the board ten times still counts once.
 	const uint8 OldMask = TrickShotMask;
 	const uint8 Place = bLaunchedByGus ? 0 : Target->GetTrickShotFlag();
@@ -202,7 +195,7 @@ bool AKRItem::TryLandIn(AActor* OtherActor)
 	{
 		if (Place != 0)
 		{
-			AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::TrickShot, NAME_None, 0.f, Place); // [M4]
+			AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::TrickShot, NAME_None, 0.f, Place);
 		}
 		return true;
 	}
@@ -210,7 +203,6 @@ bool AKRItem::TryLandIn(AActor* OtherActor)
 	return false;
 }
 
-// [M3]
 void AKRItem::HandleFlightHit(AActor* OtherActor, const FHitResult& Hit)
 {
 	EndFlight(); // the first thing it touches ends the flight
@@ -218,7 +210,7 @@ void AKRItem::HandleFlightHit(AActor* OtherActor, const FHitResult& Hit)
 	{
 		return; // landed in a pan / pot / on a plate. Don't touch "this" after this point.
 	}
-	UKRAudioSubsystem::PlayAt(this, GetImpactSound(), Hit.ImpactPoint); // [M4.3] thud / clang
+	UKRAudioSubsystem::PlayAt(this, GetImpactSound(), Hit.ImpactPoint); // thud / clang
 	if (IKRInteractable* Target = Cast<IKRInteractable>(OtherActor))
 	{
 		Target->OnHitByThrownItem(this); // e.g. knock the pot off the burner
@@ -227,7 +219,7 @@ void AKRItem::HandleFlightHit(AActor* OtherActor, const FHitResult& Hit)
 
 FText AKRItem::GetInteractPrompt(const AKRItem* HeldItem) const
 {
-	if (bInFlight) // [M3]
+	if (bInFlight)
 	{
 		return GetCatchPrompt(HeldItem);
 	}
@@ -241,7 +233,7 @@ FText AKRItem::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRItem::Interact(UKRInteractionComponent* Interactor)
 {
-	if (bInFlight) // [M3]
+	if (bInFlight)
 	{
 		return CatchBy(Interactor);
 	}

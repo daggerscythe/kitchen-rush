@@ -99,7 +99,7 @@ void AKitchenRushCharacter::BeginPlay()
 	StandingHalfHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
 
 	Interaction->Setup(FirstPersonCameraComponent, HoldPoint);
-	Throw->Setup(FirstPersonCameraComponent, Interaction, ArcDots); // [M3]
+	Throw->Setup(FirstPersonCameraComponent, Interaction, ArcDots);
 
 	// Frozen look: set up the cameras post-process settings
 	FPostProcessSettings& PP = FirstPersonCameraComponent->PostProcessSettings;
@@ -193,7 +193,7 @@ void AKitchenRushCharacter::DoAim(float Yaw, float Pitch)
 {
 	if (GetController())
 	{
-		// [M4] Mouse sensitivity from Settings.
+		// Mouse sensitivity from Settings.
 		const UKRProfileSubsystem* Profile = UKRProfileSubsystem::Get(this);
 		const float Sensitivity = Profile ? Profile->GetMouseSensitivity() : 1.f;
 

@@ -9,7 +9,7 @@
 
 class UTexture2D;
 
-/** [M3.7] Trick-shot places, as bits: an ingredient remembers each place it was THROWN into (once per place). */
+/** Trick-shot places, as bits: an ingredient remembers each place it was THROWN into (once per place). */
 namespace KRTrick
 {
 	constexpr uint8 Board = 1 << 0;
@@ -68,7 +68,7 @@ struct FKRRecipeRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe")
 	bool bInRandomPool = true;
 
-	/** [M3.7] Full price of a 100% correct dish, in $. 0 = use Tip Base from DA_Tuning. */
+	/** Full price of a 100% correct dish, in $. 0 = use Tip Base from DA_Tuning. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Recipe")
 	int32 Price = 0;
 };
@@ -90,7 +90,7 @@ struct FKRPlatedPart
 	UPROPERTY(BlueprintReadOnly, Category = "Plate")
 	bool bPerfect = false;
 
-	// [M3.7] Counts, so soup can add up both of its tomatoes.
+	// Counts, so soup can add up both of its tomatoes.
 
 	/** Trick shots: one per place (board, plate, pan, pot) each ingredient was thrown into. */
 	UPROPERTY(BlueprintReadOnly, Category = "Plate")
@@ -105,7 +105,7 @@ struct FKRPlatedPart
 	int32 GroundTouches = 0;
 };
 
-/** [M3.7] What a line of the order receipt is, so the HUD can colour it. */
+/** What a line of the order receipt is, so the HUD can colour it. */
 UENUM(BlueprintType)
 enum class EKRReceiptLine : uint8
 {
@@ -115,7 +115,7 @@ enum class EKRReceiptLine : uint8
 	Total     // "Total: $27"
 };
 
-/** [M3.7] One line of an order receipt. */
+/** One line of an order receipt. */
 USTRUCT(BlueprintType)
 struct FKRReceiptLine
 {
@@ -128,7 +128,7 @@ struct FKRReceiptLine
 	FText Text;
 };
 
-/** [M3.7] A served order's receipt: shown line by line in the HUD's receipt log. */
+/** A served order's receipt: shown line by line in the HUD's receipt log. */
 USTRUCT(BlueprintType)
 struct FKRReceipt
 {

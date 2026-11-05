@@ -122,10 +122,18 @@ bool AKRPan::Interact(UKRInteractionComponent* Interactor)
 	return false;
 }
 
-void AKRPan::UpdateAim(const FVector& Point)
+void AKRPan::UpdateAim(const FVector& RayStart, const FVector& RayDirection)
 {
-	// The steak's outline seen from above (plus 2 cm); a point inside it is "on the steak".
-	bAimingAtSteak = Steak && Steak->GetComponentsBoundingBox(true).ExpandBy(2.f).IsInsideXY(Point);
+	bAimingAtSteak = false;
+	if (!Steak)
+	{
+		return;
+	}
+	// How close does the crosshair ray pass to the middle of the steak? Within the steak's own size = on it.
+	const FBox Box = Steak->GetComponentsBoundingBox(true);
+	const FVector Extent = Box.GetExtent();
+	const float Radius = FMath::Max(Extent.X, Extent.Y) + 2.f;
+	bAimingAtSteak = FMath::PointDistToLine(Box.GetCenter(), RayDirection, RayStart) <= Radius;
 }
 
 void AKRPan::Cook(float WorldSeconds)
@@ -133,7 +141,7 @@ void AKRPan::Cook(float WorldSeconds)
 	if (Steak)
 	{
 		const UKRTuningData* T = UKRTuningData::Get(this);
-		const float Before = Steak->GetCookSeconds(); // [M4.3]
+		const float Before = Steak->GetCookSeconds();
 		Steak->AddCookTime(WorldSeconds);
 		// Ding: it just reached the perfect window.
 		if (Before < T->SteakCookedAt && Steak->GetCookSeconds() >= T->SteakCookedAt)
@@ -155,7 +163,7 @@ void AKRPan::StartGreaseFire()
 	// The steak is ash now.
 	Steak->Destroy();
 	Steak = nullptr;
-	UKRAudioSubsystem::PlayAt(this, EKRSound::FireFlare, GetActorLocation()); // [M4.3] whoomph
+	UKRAudioSubsystem::PlayAt(this, EKRSound::FireFlare, GetActorLocation()); // whoomph
 
 	UClass* FireClass = GreaseFireClass ? GreaseFireClass.Get() : AKRHazardZone::StaticClass();
 	FActorSpawnParameters Params;

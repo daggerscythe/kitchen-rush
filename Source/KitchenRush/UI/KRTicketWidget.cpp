@@ -34,7 +34,7 @@ void UKRTicketWidget::Setup(const FKRRecipeRow& Recipe)
 
 void UKRTicketWidget::SetPatience(float Fraction)
 {
-	// [M4] Below 0 = this ticket has no patience: hide the bar.
+	// Below 0 = this ticket has no patience: hide the bar.
 	PatienceBar->SetVisibility(Fraction < 0.f ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	Fraction = FMath::Clamp(Fraction, 0.f, 1.f);
 	PatienceBar->SetPercent(Fraction);

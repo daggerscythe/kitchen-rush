@@ -18,6 +18,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
 #include "HAL/IConsoleManager.h"
+#include "Misc/App.h"
 #include "KitchenRushGameMode.h"
 #include "KitchenRushPlayerController.h"
 
@@ -130,7 +131,6 @@ float AKRActDirector::HoursToShiftSeconds(float Hours) const
 	return (Hours - T->ShiftStartHour) * T->WorldSecondsPerGameHour;
 }
 
-// [M4.2]
 float AKRActDirector::GetClockSpeed() const
 {
 	if (CurrentAct == 2 && Act2WorldSeconds > 0.f)
@@ -249,6 +249,7 @@ void AKRActDirector::StartAct(int32 Act)
 			return;
 		}
 		Beat = EKRBeat::Act2_ThrowSteak;
+		LessonRealSeconds = 0.f;
 		Note(NoteThrowSteak);
 		return;
 	}
@@ -325,9 +326,29 @@ void AKRActDirector::TossOnion()
 		BeginRush2();
 		return;
 	}
-	UKRAudioSubsystem::PlayAt(this, EKRSound::GusHeadsUp, G->GetActorLocation()); // [M4.3]
+	UKRAudioSubsystem::PlayAt(this, EKRSound::GusHeadsUp, G->GetActorLocation());
 	TutorialOnion = G->LaunchItem(OnionClass, EKRGusAim::InFrontOfPlayer);
 	OnionGoneSeconds = 0.f;
+	++OnionTosses;
+}
+
+void AKRActDirector::StartOnionStep()
+{
+	Beat = EKRBeat::Act2_CatchOnion;
+	OnionDelayLeft = OnionTossDelay;
+	bOnionTossed = false;
+	OnionTosses = 0;
+	LessonRealSeconds = 0.f;
+}
+
+void AKRActDirector::FinishHeadsUpLesson()
+{
+	BeginRush2();
+	// The lesson gave you an onion and a steak in the pan: the first ticket uses them.
+	if (AKitchenRushGameMode* GameMode = GetGameMode())
+	{
+		GameMode->AddOrder(SteakOnionsRow, 0.f);
+	}
 }
 
 void AKRActDirector::SkipTutorial()
@@ -387,7 +408,7 @@ void AKRActDirector::DropShelfBoards()
 	{
 		return;
 	}
-	bool bPlayedCrash = false; // [M4.3] one crash for the whole shelf
+	bool bPlayedCrash = false; // one crash for the whole shelf
 	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
 	{
 		if (!It->ActorHasTag(ShelfBoardTag))
@@ -424,7 +445,7 @@ void AKRActDirector::Tick(float DeltaSeconds)
 
 	if (bClockRunning)
 	{
-		ShiftSeconds += DeltaSeconds * GetClockSpeed(); // [M4.2] Act 2 can run fast
+		ShiftSeconds += DeltaSeconds * GetClockSpeed(); // Act 2 can run fast
 	}
 
 	// Auto-freeze: the note pauses the game at the peak of the burst.
@@ -475,49 +496,67 @@ void AKRActDirector::UpdateAct1()
 
 void AKRActDirector::UpdateAct2(float DeltaSeconds)
 {
-	// A steak cooking in a pan, thrown in or placed by hand: start the countdown to the onion.
+	// Real time on this lesson step (this only ticks while the game isn't paused, so notes don't count).
+	const float RealDt = FMath::Min(static_cast<float>(FApp::GetDeltaTime()), 0.1f);
+
+	// Step 1: get a steak cooking in a pan (thrown in or placed by hand).
 	if (Beat == EKRBeat::Act2_ThrowSteak)
 	{
+		LessonRealSeconds += RealDt;
+		bool bCooking = false;
 		for (TActorIterator<AKRPan> It(GetWorld()); It; ++It)
 		{
 			if (It->IsCookingSteak())
 			{
-				Beat = EKRBeat::Act2_CatchOnion;
-				OnionDelayLeft = OnionTossDelay;
+				bCooking = true;
 				break;
 			}
 		}
+		if (bCooking || LessonRealSeconds > ThrowSteakTimeout) // safety net: never wait forever
+		{
+			StartOnionStep();
+		}
 		return;
 	}
+
+	// Step 2: a moment later Gus tosses an onion; get hold of one.
 	if (Beat == EKRBeat::Act2_CatchOnion)
 	{
-		if (OnionDelayLeft > 0.f)
+		if (!bOnionTossed)
 		{
-			OnionDelayLeft -= DeltaSeconds;
+			OnionDelayLeft -= DeltaSeconds; // world time: if you freeze, Gus waits too
 			if (OnionDelayLeft <= 0.f)
 			{
+				bOnionTossed = true;
 				Note(NoteHeadsUp);
 				TossOnion();
 			}
 			return;
 		}
-		// Caught it, or picked it up after it landed: either way the player has it now.
-		if (const AKRItem* Held = TutorialOnion.Get())
+		LessonRealSeconds += RealDt;
+
+		// ANY onion counts once you have it: caught, picked up after it landed, an earlier toss,
+		// one from the crate, or one you put on a board or a plate.
+		for (TActorIterator<AKRFood> It(GetWorld()); It; ++It)
 		{
-			if (Held->IsHeld() || Held->IsStored())
+			if (It->FoodType == EKRFoodType::Onion && (It->IsHeld() || It->IsStored()))
 			{
-				BeginRush2();
-				if (AKitchenRushGameMode* GameMode = GetGameMode())
-				{
-					GameMode->AddOrder(SteakOnionsRow, 0.f);
-				}
+				FinishHeadsUpLesson();
 				return;
 			}
 		}
+
 		// Missed it? Once it's lying somewhere (or got binned), Gus throws another.
 		const AKRItem* Onion = TutorialOnion.Get();
 		const bool bLanded = !Onion || (!Onion->IsInFlight() && !Onion->IsHeld() && !Onion->IsStored());
 		OnionGoneSeconds = bLanded ? OnionGoneSeconds + DeltaSeconds : 0.f;
+
+		// Safety net: after a few tries, or too long, the rush starts anyway.
+		if (LessonRealSeconds > OnionTimeout || (OnionTosses >= MaxOnionTosses && OnionGoneSeconds > 1.5f))
+		{
+			FinishHeadsUpLesson();
+			return;
+		}
 		if (OnionGoneSeconds > 1.5f)
 		{
 			if (AKitchenRushGameMode* GameMode = GetGameMode())
@@ -563,7 +602,7 @@ void AKRActDirector::UpdateAct3()
 	AKitchenRushGameMode* GameMode = GetGameMode();
 	AKRPot* Pot = nullptr;
 	for (TActorIterator<AKRPot> It(GetWorld()); It && !Pot; ++It) { Pot = *It; }
-	// [M4.1] The pacing puzzle has no note any more: players work out the micro-bursts themselves.
+	// The pacing puzzle has no note any more: players work out the micro-bursts themselves.
 
 	// Chain reaction: Gus trips while the soup is about to boil over.
 	if (!bChainDone && ShiftSeconds >= HoursToShiftSeconds(ChainReactionHour))
@@ -590,7 +629,7 @@ void AKRActDirector::UpdateAct3()
 		AKRGusDirector* G = Gus.Get();
 		if (G && G->HasEvent(ShelfEvent) && G->PlayEvent(ShelfEvent))
 		{
-			UKRAudioSubsystem::PlayAt(this, EKRSound::ShelfCreak, G->GetWarningLocation()); // [M4.3] the shelf groans
+			UKRAudioSubsystem::PlayAt(this, EKRSound::ShelfCreak, G->GetWarningLocation()); // the shelf groans
 			G->ResetTripTimer();
 			Note(NoteShelf);
 		}
@@ -618,7 +657,7 @@ float AKRActDirector::SecondsToNextScriptedBeat() const
 	float Next = -1.f;
 	auto Consider = [this, &Next](bool bDone, float Hour)
 	{
-		const float Until = (HoursToShiftSeconds(Hour) - ShiftSeconds) / GetClockSpeed(); // [M4.2] in world seconds
+		const float Until = (HoursToShiftSeconds(Hour) - ShiftSeconds) / GetClockSpeed(); // in world seconds
 		if (!bDone && Until > 0.f && (Next < 0.f || Until < Next))
 		{
 			Next = Until;
@@ -669,14 +708,6 @@ void AKRActDirector::HandleEvent(const FKRGameEvent& Event)
 		{
 			bShownBurnt = true;
 			Note(NoteBurnt);
-		}
-		break;
-
-	case EKRGameEvent::TrickShot:
-		if (Beat == EKRBeat::Act2_ThrowSteak && (Event.Flags & KRTrick::Pan) != 0)
-		{
-			Beat = EKRBeat::Act2_CatchOnion;
-			OnionDelayLeft = OnionTossDelay; // UpdateAct2 tosses the onion when this runs out
 		}
 		break;
 

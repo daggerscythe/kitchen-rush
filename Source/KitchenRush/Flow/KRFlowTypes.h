@@ -1,5 +1,5 @@
 // KRFlowTypes.h
-// [M4] Small shared types for the night's flow: game events (what just happened), run outcomes and results.
+// Small shared types for the night's flow: game events (what just happened), run outcomes and results.
 
 #pragma once
 

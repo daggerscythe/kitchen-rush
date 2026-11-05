@@ -5,7 +5,7 @@
 
 #include "CoreMinimal.h"
 #include "Cooking/KRCookware.h"
-#include "Cooking/KRTypes.h" // [M3.7] KRTrick
+#include "Cooking/KRTypes.h" // KRTrick
 #include "KRPot.generated.h"
 
 class AKRHazardZone;
@@ -23,22 +23,22 @@ public:
 
 	bool IsSoupReady() const;
 
-	/** [M4] All the tomatoes are in and it's on a burner (so it's heading for boil-over). */
+	/** All the tomatoes are in and it's on a burner (so it's heading for boil-over). */
 	bool IsSimmering() const;
 
-	/** [M4] Jump the simmer forward so it boils over in SecondsLeft world seconds (the Act 3 chain reaction). */
+	/** Jump the simmer forward so it boils over in SecondsLeft world seconds (the Act 3 chain reaction). */
 	void FastForwardToBoilOver(float SecondsLeft);
 
-	// [M3] A chopped tomato thrown at the pot (or caught while holding it) goes in.
+	// A chopped tomato thrown at the pot (or caught while holding it) goes in.
 	virtual bool CanReceiveItem(const AKRItem* Item) const override;
 	virtual bool ReceiveThrownItem(AKRItem* Item) override;
-	virtual uint8 GetTrickShotFlag() const override { return KRTrick::Pot; } // [M3.7]
-	virtual EKRSound GetImpactSound() const override { return EKRSound::PotClang; } // [M4.3]
+	virtual uint8 GetTrickShotFlag() const override { return KRTrick::Pot; }
+	virtual EKRSound GetImpactSound() const override { return EKRSound::PotClang; }
 
 protected:
 	virtual void Cook(float WorldSeconds) override;
 	virtual void UpdateMeter() override;
-	virtual void UpdateCookSound() override; // [M4.3]
+	virtual void UpdateCookSound() override;
 
 	/** The soup surface that rises as tomatoes go in. Pick SM_SoupPot_Surface in BP_Pot. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Pot")
@@ -51,17 +51,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Pot")
 	float SurfaceFullZ = 17.f;
 
-	/** [M3] Spawned when the soup boils over: set to BP_Spill. (Empty = an invisible spill, still hurts.) */
+	/** Spawned when the soup boils over: set to BP_Spill. (Empty = an invisible spill, still hurts.) */
 	UPROPERTY(EditAnywhere, Category = "Pot")
 	TSubclassOf<AKRHazardZone> SpillClass;
 
 private:
 	void ResetPot();
 	void UpdateSurface();
-	void AddTomato(AKRItem* Tomato); // [M3]
-	void BoilOver();                 // [M3]
+	void AddTomato(AKRItem* Tomato);
+	void BoilOver();
 
 	int32 TomatoCount = 0;
-	FKRPlatedPart TomatoTally; // [M3.7] trick shots, Gus Assists and ground touches of every tomato that went in
+	FKRPlatedPart TomatoTally; // trick shots, Gus Assists and ground touches of every tomato that went in
 	float SimmerSeconds = 0.f;
 };

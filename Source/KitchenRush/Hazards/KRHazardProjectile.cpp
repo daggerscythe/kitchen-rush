@@ -1,7 +1,7 @@
 // KRHazardProjectile.cpp
 
 #include "Hazards/KRHazardProjectile.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRTuningData.h"
 #include "Player/KRHealthComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -66,7 +66,7 @@ void AKRHazardProjectile::PostThrown(const FVector& Velocity)
 	Mesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 	Mesh->SetEnableGravity(false); // we add our own, weaker gravity in Tick
 	Mesh->SetPhysicsLinearVelocity(Velocity);
-	UKRAudioSubsystem::UpdateLoop(this, FlightLoop, EKRSound::KnifeWhoosh, true, Mesh); // [M4.3] whoosh-whoosh-whoosh
+	UKRAudioSubsystem::UpdateLoop(this, FlightLoop, EKRSound::KnifeWhoosh, true, Mesh); // whoosh-whoosh-whoosh
 	SetLifeSpan(15.f); // world seconds: a knife that misses everything doesn't hang around forever
 }
 
@@ -109,7 +109,7 @@ void AKRHazardProjectile::HandleFlightHit(AActor* OtherActor, const FHitResult& 
 void AKRHazardProjectile::KnifeHit(AActor* OtherActor, const FHitResult& Hit)
 {
 	EndFlight();
-	UKRAudioSubsystem::UpdateLoop(this, FlightLoop, EKRSound::KnifeWhoosh, false, Mesh); // [M4.3]
+	UKRAudioSubsystem::UpdateLoop(this, FlightLoop, EKRSound::KnifeWhoosh, false, Mesh);
 	const UKRTuningData* T = UKRTuningData::Get(this);
 	APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
 
@@ -119,7 +119,7 @@ void AKRHazardProjectile::KnifeHit(AActor* OtherActor, const FHitResult& Hit)
 		{
 			Health->ApplyDamage(T->KnifeHitDamage);
 		}
-		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::KnifeHit); // [M4]
+		AKitchenRushGameMode::NotifyGameEvent(this, EKRGameEvent::KnifeHit);
 		// Clatter to the floor and vanish.
 		Mesh->SetEnableGravity(true);
 		SetLifeSpan(3.f);
@@ -127,7 +127,7 @@ void AKRHazardProjectile::KnifeHit(AActor* OtherActor, const FHitResult& Hit)
 	}
 
 	// Stuck in a wall, counter or crate: freeze in place for a bit.
-	UKRAudioSubsystem::PlayAt(this, EKRSound::Thud, Hit.ImpactPoint); // [M4.3] thunk
+	UKRAudioSubsystem::PlayAt(this, EKRSound::Thud, Hit.ImpactPoint); // thunk
 	Mesh->SetSimulatePhysics(false);
 	SetActorEnableCollision(false);
 	SetLifeSpan(6.f);
@@ -145,7 +145,7 @@ void AKRHazardProjectile::KnifeHit(AActor* OtherActor, const FHitResult& Hit)
 void AKRHazardProjectile::Shatter()
 {
 	const UKRTuningData* T = UKRTuningData::Get(this);
-	// [M4.3] Glass breaking and sauce going everywhere.
+	// Glass breaking and sauce going everywhere.
 	UKRAudioSubsystem::PlayAt(this, EKRSound::Shatter, GetActorLocation());
 	UKRAudioSubsystem::PlayAt(this, EKRSound::Splat, GetActorLocation());
 	if (const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))

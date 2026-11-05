@@ -68,13 +68,13 @@ void UKRHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 	UpdateClock();
 	UpdateOrders();
-	UpdateHealth(); // [M3]
-	UpdateGusWarning(); // [M3.5]
-	UpdateReceiptLog(); // [M3.7]
-	UpdateActTitle(InDeltaTime); // [M4]
+	UpdateHealth();
+	UpdateGusWarning();
+	UpdateReceiptLog();
+	UpdateActTitle(InDeltaTime);
 }
 
-// [M4] The act banner: shown for a few real seconds when an act starts, then fades.
+// The act banner: shown for a few real seconds when an act starts, then fades.
 // Its clock only runs while the game isn't paused, so it isn't used up behind a note card.
 void UKRHUDWidget::UpdateActTitle(float RealDeltaSeconds)
 {
@@ -106,7 +106,6 @@ void UKRHUDWidget::UpdateActTitle(float RealDeltaSeconds)
 	ActTitleText->SetRenderOpacity(FadeIn * FadeOut);
 }
 
-// [M3.7]
 void UKRHUDWidget::UpdateReceiptLog()
 {
 	UWorld* World = GetWorld();
@@ -181,7 +180,6 @@ void UKRHUDWidget::UpdateReceiptLog()
 	}
 }
 
-// [M3.5]
 void UKRHUDWidget::UpdateGusWarning()
 {
 	const AKRGusDirector* Gus = AKRGusDirector::Find(GetWorld());
@@ -213,7 +211,7 @@ void UKRHUDWidget::UpdateGusWarning()
 	{
 		// Where is Gus relative to where we're looking? Unrotate the direction into "camera space":
 		// X = ahead, Y = right. Atan2 turns that into an angle: 0 = straight ahead, 90 = to the right.
-		// [M4] Point at where the warning comes from (Gus, or the shelf).
+		// Point at where the warning comes from (Gus, or the shelf).
 		const FVector ToGus = Gus->GetWarningLocation() - PC->PlayerCameraManager->GetCameraLocation();
 		const FVector Local = FRotator(0.f, PC->PlayerCameraManager->GetCameraRotation().Yaw, 0.f).UnrotateVector(ToGus);
 		const float Angle = FMath::RadiansToDegrees(FMath::Atan2(Local.Y, Local.X));
@@ -223,7 +221,6 @@ void UKRHUDWidget::UpdateGusWarning()
 	GusArrow->SetVisibility(bShowArrow ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }
 
-// [M3]
 void UKRHUDWidget::UpdateHealth()
 {
 	const APawn* Pawn = GetOwningPlayerPawn();
@@ -257,7 +254,7 @@ void UKRHUDWidget::UpdateClock()
 		return;
 	}
 	const UKRTuningData* T = UKRTuningData::Get(this);
-	// [M4] With an act director, the clock is the night's clock (frozen at 5:00 PM in Act 1).
+	// With an act director, the clock is the night's clock (frozen at 5:00 PM in Act 1).
 	const AKRActDirector* Director = AKRActDirector::Find(this);
 	const float GameHours = Director ? Director->GetClockHours()
 		: T->ShiftStartHour + Time->GetWorldSecondsElapsed() / T->WorldSecondsPerGameHour;
@@ -338,7 +335,7 @@ void UKRHUDWidget::UpdateOrders()
 	// (If a ticket widget failed to create, the lists can differ in length; stop at the shorter.)
 	for (int32 i = 0; i < Orders.Num() && i < TicketWidgets.Num(); ++i)
 	{
-		// [M4] A ticket without patience (Act 1's first order) hides its bar: SetPatience(-1).
+		// A ticket without patience (Act 1's first order) hides its bar: SetPatience(-1).
 		TicketWidgets[i]->SetPatience(Orders[i].PatienceTotal > 0.f ? Orders[i].PatienceLeft / Orders[i].PatienceTotal : -1.f);
 	}
 }

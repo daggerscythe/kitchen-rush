@@ -5,7 +5,7 @@
 #include "Interaction/KRItem.h"
 #include "Cooking/KRTuningData.h"
 #include "Time/KRTimeSubsystem.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Camera/CameraComponent.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/World.h"
@@ -52,7 +52,7 @@ void UKRThrowComponent::ReleaseThrow()
 	const FVector Velocity = GetThrowVelocity();
 	Interaction->ReleaseHeldItem();
 	Item->OnThrown(Start, Velocity, false);
-	UKRAudioSubsystem::Play2D(this, EKRSound::Throw); // [M4.3] whoosh
+	UKRAudioSubsystem::Play2D(this, EKRSound::Throw); // whoosh
 
 	if (UKRTimeSubsystem* Time = GetWorld()->GetSubsystem<UKRTimeSubsystem>())
 	{

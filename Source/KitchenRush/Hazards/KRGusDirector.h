@@ -1,5 +1,5 @@
 // KRGusDirector.h
-// [M3] Gus, the clumsy waiter, as an invisible point just inside the pass window.
+// Gus, the clumsy waiter, as an invisible point just inside the pass window.
 // He does two kinds of things:
 //  - Toss: lobs you one ingredient an open ticket needs (catch it for a bonus).
 //  - Events: named, data-driven bursts of flying stuff. "Trip" ships with M3; M4 adds more
@@ -7,7 +7,7 @@
 // Every launch is a list entry (what, aimed how, how long after the event starts), so new
 // events need no code: add a row in BP_GusDirector's Events list.
 //
-// [M3.5] Everything Gus does is announced first: a big HUD warning (and an arrow if he's behind you)
+// Everything Gus does is announced first: a big HUD warning (and an arrow if he's behind you)
 // shows for a couple of world seconds BEFORE anything flies, so you have time to turn around.
 //
 // Debug console commands (press ` in Play): kr.Toss, kr.Trip, kr.Event <Name>, kr.Hurt <amount>, kr.GusAuto 0/1
@@ -66,11 +66,11 @@ struct FKRGusEvent
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gus")
 	FText Shout;
 
-	/** [M3.5] World seconds of warning before the first launch. 0 = use Trip Warning Seconds from DA_Tuning. */
+	/** World seconds of warning before the first launch. 0 = use Trip Warning Seconds from DA_Tuning. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gus", meta = (ClampMin = "0"))
 	float WarningSeconds = 0.f;
 
-	/** [M4] Launch from an actor with this Tag (e.g. "Shelf" for the shelf collapse) instead of from Gus.
+	/** Launch from an actor with this Tag (e.g. "Shelf" for the shelf collapse) instead of from Gus.
 	 *  Give any actor in the level the tag under Details > Actor > Tags. Empty = from Gus. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gus")
 	FName OriginTag;
@@ -79,7 +79,7 @@ struct FKRGusEvent
 	TArray<FKRGusLaunch> Launches;
 };
 
-/** [M4] Fired when an event's launches start (the act director uses it for the first-trip auto-freeze). */
+/** Fired when an event's launches start (the act director uses it for the first-trip auto-freeze). */
 DECLARE_MULTICAST_DELEGATE_OneParam(FKROnGusEventLaunched, FName /*EventName*/);
 
 UCLASS()
@@ -91,7 +91,7 @@ public:
 	AKRGusDirector();
 
 	/** Gus tosses one ingredient that an open ticket needs (or any ingredient if there are no tickets).
-	 *  [M3.5] Warns first; the ingredient flies TossWarningSeconds later. */
+	 * Warns first; the ingredient flies TossWarningSeconds later. */
 	UFUNCTION(BlueprintCallable, Category = "Gus")
 	void TossIngredient(FName ForRecipe = NAME_None);
 
@@ -99,44 +99,44 @@ public:
 	void OnOrderAdded(FName RecipeRow);
 
 	/** Run the event called EventName from the Events list. False if there isn't one.
-	 *  [M3.5] Warns first; the launches start after the event's warning time. Replaces a pending toss. */
+	 * Warns first; the launches start after the event's warning time. Replaces a pending toss. */
 	UFUNCTION(BlueprintCallable, Category = "Gus")
 	bool PlayEvent(FName EventName);
 
 	/** Spawn ItemClass at Gus and launch it. Returns the item (or nullptr). */
 	AKRItem* LaunchItem(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim);
 
-	/** [M4] Same, but launched from Origin (the shelf, say) instead of from Gus. */
+	/** Same, but launched from Origin (the shelf, say) instead of from Gus. */
 	AKRItem* LaunchItemFrom(TSubclassOf<AKRItem> ItemClass, EKRGusAim Aim, const FVector& Origin);
 
-	/** Turn the automatic toss/trip timers on or off. [M4] Sets both of the switches below. */
+	/** Turn the automatic toss/trip timers on or off. Sets both of the switches below. */
 	UFUNCTION(BlueprintCallable, Category = "Gus")
 	void SetAutoEvents(bool bEnabled) { bAutoToss = bEnabled; bAutoTrips = bEnabled; }
 
-	/** [M4] The act director switches these separately (tosses from Act 2, timed trips after the first scripted one). */
+	/** The act director switches these separately (tosses from Act 2, timed trips after the first scripted one). */
 	void SetAutoToss(bool bEnabled) { bAutoToss = bEnabled; }
 	void SetAutoTrips(bool bEnabled) { bAutoTrips = bEnabled; }
 
-	/** [M4] Restart the timed-trip countdown (after a scripted trip, so two don't land back to back). */
+	/** Restart the timed-trip countdown (after a scripted trip, so two don't land back to back). */
 	void ResetTripTimer();
 
-	/** [M4] If a timed trip would land within ~12 s of a scripted beat SecondsUntil away, push it past the beat. */
+	/** If a timed trip would land within ~12 s of a scripted beat SecondsUntil away, push it past the beat. */
 	void KeepAutoTripAwayFrom(float SecondsUntil);
 
-	/** [M4] The food class for a type (from Food Classes), e.g. the onion for Act 2's "Heads up!". */
+	/** The food class for a type (from Food Classes), e.g. the onion for Act 2's "Heads up!". */
 	TSubclassOf<AKRFood> FindFoodClass(EKRFoodType Type) const;
 
-	/** [M4] Is this event in the Events list? */
+	/** Is this event in the Events list? */
 	bool HasEvent(FName EventName) const;
 
-	/** [M4] Where the current warning comes from (Gus, or the shelf): the HUD arrow points here. */
+	/** Where the current warning comes from (Gus, or the shelf): the HUD arrow points here. */
 	FVector GetWarningLocation() const { return WarningLocation; }
 
-	/** [M4] Broadcast when an event's launches begin. */
+	/** Broadcast when an event's launches begin. */
 	FKROnGusEventLaunched OnEventLaunched;
 
-	/** [M3.5] For the HUD: is a big trip warning up right now, and what does it say?
-	 *  [M3.6] Only trips (events) use it; tosses are a normal message. */
+	/** For the HUD: is a big trip warning up right now, and what does it say?
+	 * Only trips (events) use it; tosses are a normal message. */
 	bool IsWarning() const { return (Pending == EPending::Event) || WarningHoldLeft > 0.f; }
 	FText GetWarningText() const { return WarningText; }
 
@@ -164,7 +164,7 @@ protected:
 	TArray<FKRGusEvent> Events;
 
 	/** Toss every TossInterval and trip every TripInterval (both in DA_Tuning).
-	 *  [M4] With a BP_ActDirector in the level, the director switches these on and off per act. */
+	 * With a BP_ActDirector in the level, the director switches these on and off per act. */
 	UPROPERTY(EditAnywhere, Category = "Gus")
 	bool bAutoEvents = true;
 
@@ -176,6 +176,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Gus|Aim")
 	float SpawnSpread = 25.f;
 
+	/** Launches start this far (cm) from Gus or the shelf, toward where they're aimed, so they don't hit the shelf itself. */
+	UPROPERTY(EditAnywhere, Category = "Gus|Aim")
+	float LaunchClearance = 60.f;
+
 	/** InFrontOfPlayer: how far in front of you (toward Gus) catchable things arrive, cm. */
 	UPROPERTY(EditAnywhere, Category = "Gus|Aim")
 	float CatchPointDistance = 110.f;
@@ -186,10 +190,10 @@ protected:
 
 private:
 	FVector GetAimPoint(EKRGusAim Aim, const FVector& Origin) const;
-	FVector FindOrigin(FName Tag) const; // [M4]
+	FVector FindOrigin(FName Tag) const;
 	void Shout(const FText& Text) const;
 
-	// [M3.5] The one thing Gus is about to do once the warning runs out.
+	// The one thing Gus is about to do once the warning runs out.
 	enum class EPending : uint8 { None, Toss, Event };
 	void StartWarning(const FText& Text, float Seconds);
 	void RunPending();
@@ -207,7 +211,6 @@ private:
 	bool bWarnedEmptyClass = false;
 	FName QueuedTossRecipe; // a ticket Gus will toss for once he's free
 
-	// [M4]
 	bool bAutoToss = true;
 	bool bAutoTrips = true;
 	FVector WarningLocation = FVector::ZeroVector;

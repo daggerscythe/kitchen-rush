@@ -1,5 +1,5 @@
 // KRSaveGame.h
-// [M4] What's saved between sessions: settings, high score and the furthest act reached (for Continue).
+// What's saved between sessions: settings, high score and the furthest act reached (for Continue).
 // A USaveGame is just a UObject whose UPROPERTYs get written to a file in Saved/SaveGames.
 
 #pragma once
@@ -36,19 +36,10 @@ public:
 	UPROPERTY()
 	float UIScale = 1.f;
 
-	/** [M4.3] 0..1. Old saves without these load as 1 (full volume). */
+	/** 0..1. Old saves without these load as 1 (full volume). */
 	UPROPERTY()
 	float MasterVolume = 1.f;
 
 	UPROPERTY()
 	float MusicVolume = 1.f;
-
-	UPROPERTY()
-	float SlowdownDelay = 0.f;
-
-	UPROPERTY()
-	EKRStillMode StillMode = EKRStillMode::Slow;
-
-	UPROPERTY()
-	EKRMoveMode MoveMode = EKRMoveMode::Clamped;
 };

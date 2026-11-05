@@ -1,5 +1,5 @@
 // KRResultsWidget.h
-// [M4] End of the night: "Shift complete!" with stars, or "Game Over". WBP_Results is its Blueprint.
+// End of the night: "Shift complete!" with stars, or "Game Over". WBP_Results is its Blueprint.
 
 #pragma once
 

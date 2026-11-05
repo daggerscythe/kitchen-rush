@@ -1,7 +1,7 @@
 // KRPlate.cpp
 
 #include "Cooking/KRPlate.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 #include "Cooking/KRFood.h"
 #include "Cooking/KRTuningData.h"
 #include "Interaction/KRInteractionComponent.h"
@@ -16,7 +16,7 @@
 AKRPlate::AKRPlate()
 {
 	DisplayName = NSLOCTEXT("KitchenRush", "PlateName", "Plate");
-	PrimaryActorTick.bCanEverTick = true; // [M3.5] remembers its speed so it knows how hard it hit the floor
+	PrimaryActorTick.bCanEverTick = true; // remembers its speed so it knows how hard it hit the floor
 
 	SoupFill = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Soup Fill"));
 	SoupFill->SetupAttachment(Mesh);
@@ -43,7 +43,7 @@ bool AKRPlate::AddFood(AKRFood* Food)
 
 	Food->OnStored(Mesh, Offset);
 	Foods.Add(Food);
-	UKRAudioSubsystem::PlayAt(this, EKRSound::DishClink, GetActorLocation()); // [M4.3]
+	UKRAudioSubsystem::PlayAt(this, EKRSound::DishClink, GetActorLocation());
 	return true;
 }
 
@@ -56,9 +56,9 @@ void AKRPlate::AddSoup(bool bPerfect, const FKRPlatedPart& Tally)
 {
 	bHasSoup = true;
 	bSoupPerfect = bPerfect;
-	SoupTally = Tally; // [M3.7]
+	SoupTally = Tally;
 	SoupFill->SetVisibility(true);
-	UKRAudioSubsystem::PlayAt(this, EKRSound::DishClink, GetActorLocation()); // [M4.3]
+	UKRAudioSubsystem::PlayAt(this, EKRSound::DishClink, GetActorLocation());
 }
 
 void AKRPlate::ClearContents()
@@ -73,11 +73,10 @@ void AKRPlate::ClearContents()
 	Foods.Empty();
 	bHasSoup = false;
 	bSoupPerfect = false;
-	SoupTally = FKRPlatedPart(); // [M3.7]
+	SoupTally = FKRPlatedPart();
 	SoupFill->SetVisibility(false);
 }
 
-// [M3.5]
 void AKRPlate::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
@@ -85,7 +84,6 @@ void AKRPlate::Tick(float DeltaSeconds)
 	LastSpeed = GetVelocity().Size();
 }
 
-// [M3.5]
 void AKRPlate::OnPhysicsHit(AActor* OtherActor, const FHitResult& Hit)
 {
 	if (IsHeld() || IsStored() || LastSpeed < UKRTuningData::Get(this)->PlateShatterSpeed)
@@ -93,16 +91,15 @@ void AKRPlate::OnPhysicsHit(AActor* OtherActor, const FHitResult& Hit)
 		return;
 	}
 	// "The floor" = a flat surface at the height of the player's feet. Counters are 90 cm up, so they don't count.
-	if (IsFloorHit(Hit)) // [M3.7] moved into AKRItem so food can use it too
+	if (IsFloorHit(Hit)) // moved into AKRItem so food can use it too
 	{
 		Shatter(Hit.ImpactPoint);
 	}
 }
 
-// [M3.5]
 void AKRPlate::Shatter(const FVector& Where)
 {
-	UKRAudioSubsystem::PlayAt(this, EKRSound::Shatter, Where); // [M4.3] CRASH
+	UKRAudioSubsystem::PlayAt(this, EKRSound::Shatter, Where); // CRASH
 	// Food falls on the floor (the 5-second rule applies); soup is lost.
 	for (int32 i = 0; i < Foods.Num(); ++i)
 	{
@@ -149,7 +146,7 @@ TArray<FKRPlatedPart> AKRPlate::GetPlatedParts() const
 		Soup.Part = EKRDishPart::TomatoSoup;
 		Soup.bCooked = true;
 		Soup.bPerfect = bSoupPerfect;
-		Soup.TrickShots = SoupTally.TrickShots;       // [M3.7]
+		Soup.TrickShots = SoupTally.TrickShots;
 		Soup.GusAssists = SoupTally.GusAssists;
 		Soup.GroundTouches = SoupTally.GroundTouches;
 		Parts.Add(Soup);
@@ -187,13 +184,11 @@ FText AKRPlate::GetItemName() const
 	return FText::Format(NSLOCTEXT("KitchenRush", "PlateWithItems", "{0} ({1})"), DisplayName, GetContentsText());
 }
 
-// [M3]
 bool AKRPlate::CanReceiveItem(const AKRItem* Item) const
 {
 	return CanAcceptFood(Cast<AKRFood>(Item));
 }
 
-// [M3]
 bool AKRPlate::ReceiveThrownItem(AKRItem* Item)
 {
 	return AddFood(Cast<AKRFood>(Item));
@@ -201,7 +196,7 @@ bool AKRPlate::ReceiveThrownItem(AKRItem* Item)
 
 FText AKRPlate::GetInteractPrompt(const AKRItem* HeldItem) const
 {
-	if (IsInFlight()) // [M3]
+	if (IsInFlight())
 	{
 		return GetCatchPrompt(HeldItem);
 	}
@@ -223,7 +218,7 @@ FText AKRPlate::GetInteractPrompt(const AKRItem* HeldItem) const
 
 bool AKRPlate::Interact(UKRInteractionComponent* Interactor)
 {
-	if (IsInFlight()) // [M3]
+	if (IsInFlight())
 	{
 		return CatchBy(Interactor);
 	}

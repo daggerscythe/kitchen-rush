@@ -21,7 +21,7 @@
 #include "UI/KRSettingsWidget.h"
 #include "UI/KRResultsWidget.h"
 #include "UI/KRNoteCardWidget.h"
-#include "Audio/KRAudioSubsystem.h" // [M4.3]
+#include "Audio/KRAudioSubsystem.h"
 
 AKitchenRushPlayerController::AKitchenRushPlayerController()
 {
@@ -89,7 +89,7 @@ void AKitchenRushPlayerController::SetupInputComponent()
 			}
 		}
 
-		// [M4] Pause lives on the controller (the pawn's input stops while paused).
+		// Pause lives on the controller (the pawn's input stops while paused).
 		if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(InputComponent))
 		{
 			if (PauseAction)
@@ -281,7 +281,7 @@ void AKitchenRushPlayerController::ShowNextNote()
 		SeenNotes.Add(Next.Body);
 	}
 	OpenScreen(NoteCard, 25);
-	UKRAudioSubsystem::Play2D(this, EKRSound::NoteRustle, true); // [M4.3] UI sound: the game is paused now
+	UKRAudioSubsystem::Play2D(this, EKRSound::NoteRustle, true); // UI sound: the game is paused now
 }
 
 void AKitchenRushPlayerController::CloseNote(bool bSkipTutorial)
@@ -292,7 +292,7 @@ void AKitchenRushPlayerController::CloseNote(bool bSkipTutorial)
 	}
 	if (NoteQueue.Num() == 0)
 	{
-		UKRAudioSubsystem::Play2D(this, EKRSound::NoteRustle, true); // [M4.3] (the next note, if any, rustles on its own)
+		UKRAudioSubsystem::Play2D(this, EKRSound::NoteRustle, true); // (the next note, if any, rustles on its own)
 	}
 	CloseScreen(NoteCard);
 	if (bSkipTutorial)
@@ -342,7 +342,7 @@ void AKitchenRushPlayerController::ShowResults(const FKRResults& Results)
 	ResultsScreen->Setup(Results);
 	if (UKRAudioSubsystem* Audio = UKRAudioSubsystem::Get(this))
 	{
-		Audio->PlayResultsJingle(Results.bWon); // [M4.3]
+		Audio->PlayResultsJingle(Results.bWon);
 	}
 	if (HUDWidget)
 	{

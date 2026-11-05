@@ -30,7 +30,7 @@ public:
 	/** The player pressed E while looking at this, true if something happened */
 	virtual bool Interact(UKRInteractionComponent* Interactor) = 0;
 
-	// ---- [M3] Throwing and catching. These have default bodies, so classes only override what they use. ----
+	// ---- Throwing and catching. These have default bodies, so classes only override what they use. ----
 
 	/** True while this is flying through the air and can be caught (thrown or tossed items, knives). */
 	virtual bool IsCatchable() const { return false; }
@@ -44,6 +44,6 @@ public:
 	/** A thrown item hit this but wasn't taken (e.g. a pan bouncing off the pot). */
 	virtual void OnHitByThrownItem(AKRItem* Item) {}
 
-	/** [M3.7] Which trick-shot place this is (KRTrick::Board, Plate, Pan, Pot), or 0 if it isn't one. */
+	/** Which trick-shot place this is (KRTrick::Board, Plate, Pan, Pot), or 0 if it isn't one. */
 	virtual uint8 GetTrickShotFlag() const { return 0; }
 };

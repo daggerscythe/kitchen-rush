@@ -101,14 +101,14 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UKRHUDWidget> HUDWidget;
 
-	// ---- [M4] Screens: set each to its WBP_ in BP_FirstPersonPlayerController ----
+	// ---- Screens: set each to its WBP_ in BP_FirstPersonPlayerController ----
 	UPROPERTY(EditAnywhere, Category = "UI|Screens") TSubclassOf<UKRMainMenuWidget> MainMenuClass;
 	UPROPERTY(EditAnywhere, Category = "UI|Screens") TSubclassOf<UKRPauseMenuWidget> PauseMenuClass;
 	UPROPERTY(EditAnywhere, Category = "UI|Screens") TSubclassOf<UKRSettingsWidget> SettingsClass;
 	UPROPERTY(EditAnywhere, Category = "UI|Screens") TSubclassOf<UKRResultsWidget> ResultsClass;
 	UPROPERTY(EditAnywhere, Category = "UI|Screens") TSubclassOf<UKRNoteCardWidget> NoteCardClass;
 
-	/** [M4] IA_Pause (Esc and P). Tick "Trigger when Paused" on the asset so it can also close the menu. */
+	/** IA_Pause (Esc and P). Tick "Trigger when Paused" on the asset so it can also close the menu. */
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> PauseAction;
 
@@ -122,7 +122,6 @@ protected:
 	bool ShouldUseTouchControls() const;
 
 private:
-	// [M4]
 	struct FQueuedNote
 	{
 		FText Title;
